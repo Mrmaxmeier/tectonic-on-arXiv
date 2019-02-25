@@ -27,7 +27,9 @@ def compare(a, b, engine):
 			if x["sample"] == i: return x
 
 	identical = set()
+	identicalSucc = set()
 	different = set()
+	differentStatuscode = set()
 	for sample in sorted(samples):
 		sA = find(entriesA, sample)
 		sB = find(entriesB, sample)
@@ -37,6 +39,7 @@ def compare(a, b, engine):
 		sB = sB["engines"][engine]
 		if sA["statuscode"] != sB["statuscode"]:
 			different.add(sample)
+			differentStatuscode.add(sample)
 		objects = sorted(set(sA['results'].keys()) | set(sB['results'].keys()))
 		for k in objects:
 			if sA['results'].get(k, None) != sB['results'].get(k, None):
@@ -53,10 +56,15 @@ def compare(a, b, engine):
 			print()
 		if sample not in different:
 			identical.add(sample)
+			if sA["statuscode"] == 0:
+				identicalSucc.add(sample)
 	
 	print("summary:")
 	print("  identical samples:", len(identical))
+	print("  \>     successful:", len(identicalSucc))
 	print("  different samples:", len(different))
+	if differentStatuscode:
+		print("  \>retcode changed:", len(differentStatuscode))
 	print("    missing samples:", len(samples - (identical | different)))
 
 

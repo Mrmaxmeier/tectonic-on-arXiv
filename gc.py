@@ -17,6 +17,7 @@ def gc(reports):
 			for _, data in pkt.get("engines", {}).items():
 				live.update(data["results"].values())
 	files = set([x.name for x in Path("objects").iterdir() if x.is_file()])
+	files -= set([".gitignore"])
 	dead = files - live
 	print("files:", len(files))
 	print(" live:", len(live))
@@ -25,6 +26,9 @@ def gc(reports):
 		for x in dead:
 			click.echo('rip ' + x)
 			(Path("objects") / x).unlink()
+	else:
+		for x in dead:
+			click.echo("dead: " + x)
 
 
 if __name__ == "__main__":

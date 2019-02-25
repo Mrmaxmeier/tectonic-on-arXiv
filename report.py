@@ -84,9 +84,9 @@ class TestEnv(object):
 
 
 @click.command()
-@click.argument('repo', type=click.Path(exists=True))
 @click.argument('corpus', type=click.Path(exists=True))
-def report(repo, corpus):
+@click.argument('repo', type=click.Path(exists=True))
+def report(corpus, repo):
 	print(repo, corpus)
 
 	name = subprocess.check_output("git describe --always --dirty --tags --exclude continuous".split(), cwd=repo).decode().strip()

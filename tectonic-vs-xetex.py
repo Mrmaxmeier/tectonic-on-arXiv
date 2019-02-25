@@ -15,25 +15,30 @@ def regressions(report):
 	meta = next(s)
 	pprint(meta)
 
-	regressions = set()
-	fixes       = set()
+	regressions = defaultdict(set)
+	fixes       = defaultdict(set)
 
 	samples = {}
 
 	for el in s:
-		if el["engines"]["tectonic"]["statuscode"] != el["engines"]["xelatex"]["statuscode"]:
-			samples[el["sample"]] = el
-			if el["engines"]["tectonic"]["statuscode"] != 0:
-				regressions.add(el["sample"])
-			if el["engines"]["xelatex"]["statuscode"] != 0:
-				fixes.add(el["sample"])
-	print("regressions", len(regressions))
-	for x in sorted(regressions):
-		pprint(samples[x])
+		sT = el["engines"]["tectonic"]["statuscode"]
+		sX = el["engines"]["xelatex"]["statuscode"]
+		if sT == sX: continue
+		samples[el["sample"]] = el
+		if sT != 0:
+			regressions[f"{sX} => {sT}"].add(el["sample"])
+		if sX != 0:
+			fixes[f"{sX} => {sT}"].add(el["sample"])
+
+	print("regressions", sum(map(len, regressions.values())))
+	for k, v in regressions.items():
+		for x in sorted(v):
+			print(x, k)
 	print()
-	print("fixes", len(fixes))
-	for x in sorted(fixes):
-		pprint(samples[x])
+	print("fixes", sum(map(len, fixes.values())))
+	for k, v in fixes.items():
+		for x in sorted(v):
+			print(x, k)
 
 if __name__ == "__main__":
 	regressions()
