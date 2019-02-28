@@ -103,7 +103,8 @@ def report(corpus, repo):
 		"name": name,
 		"branch": branch,
 		"timestamp": timestamp,
-		"dataset": Path(corpus).stem
+		"dataset": Path(corpus).stem,
+		"meta": True
 	}
 
 	reportlog = open(Path("reports") / (name + ".jsonl"), "a")

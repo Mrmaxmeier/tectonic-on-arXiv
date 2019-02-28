@@ -11,6 +11,8 @@ def stream(p):
 @click.command()
 @click.argument("reports", nargs=-1)
 def gc(reports):
+	if not reports:
+		reports = Path("reports").glob("*.jsonl")
 	live = set()
 	for r in reports:
 		for pkt in stream(r):
@@ -18,8 +20,12 @@ def gc(reports):
 				live.update(data["results"].values())
 	files = set([x.name for x in Path("objects").iterdir() if x.is_file()])
 	files -= set([".gitignore"])
+	missing = live - files
+	live &= files
 	dead = files - live
 	print("files:", len(files))
+	if missing:
+		print("  404:", len(missing))
 	print(" live:", len(live))
 	print(" dead:", len(dead))
 	if dead and click.confirm('Confirm GC?'):
