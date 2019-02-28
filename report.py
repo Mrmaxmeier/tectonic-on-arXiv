@@ -107,7 +107,10 @@ def report(corpus, repo):
 		"meta": True
 	}
 
-	reportlog = open(Path("reports") / (name + ".jsonl"), "a")
+	reportpath = Path("reports") / (name + ".jsonl")
+	if reportpath.exists() and not click.confirm("overwrite existing report?"):
+		return
+	reportlog = open(reportpath, "w")
 
 	reportlog.write(json.dumps(meta) + "\n")
 	reportlog.flush()
@@ -144,7 +147,7 @@ def report(corpus, repo):
 			print(d)
 			tectonic = Path(repo) / "target" / "release" / "tectonic"
 			# fetch required files from network
-			subprocess.run([tectonic, "--print", get_maindoc(d)], timeout=60*5, cwd=d, env=env)
+			subprocess.run([tectonic, "--print", get_maindoc(d)], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
 			# the .xdv file might be interesting
 			subprocess.run([tectonic, "--outfmt=xdv", get_maindoc(d)], timeout=60, cwd=d, env=env)
 			start = time.time()
