@@ -25,12 +25,19 @@ def sha256sum(filename):
     return h.hexdigest()
 
 def get_maindoc(p):
-	texfiles = list(filter(lambda x: x.suffix == '.tex' or magic.detect_from_filename(x).mime_type == 'text/x-tex', p.iterdir()))
+	def f_filter(x):
+		if x.suffix == '.tex':
+			return True
+		if x.suffix == '.cls':
+			return False
+		return magic.detect_from_filename(x).mime_type == 'text/x-tex'
+	texfiles = list(filter(f_filter, p.iterdir()))
 	if len(texfiles) < 2:
 		return texfiles[0]
 	for x in texfiles:
 		with open(x, "rb") as f:
-			if b"\\documentclass" in f.read():
+			data = f.read()
+			if b"\\documentclass" in data or b"\\bye":
 				return x
 	assert False, "multiple entry points?"
 
@@ -136,11 +143,22 @@ def report(corpus, repo):
 	}
 
 	reportpath = Path("reports") / (name + ".jsonl")
-	if reportpath.exists() and not click.confirm("overwrite existing report?"):
-		return
+	continueData = None
+	skipSamples = set()
+	if reportpath.exists():
+		if click.confirm("report file already exists. abort?"):
+			return
+		if click.confirm("continue report (vs overwrite)?"):
+			with open(reportpath) as f:
+				continueData = f.read()
+			for l in continueData.splitlines()[1:]:
+				skipSamples.add(json.loads(l)["sample"])
 	reportlog = open(reportpath, "w")
 
-	reportlog.write(json.dumps(meta) + "\n")
+	if continueData:
+		reportlog.write(continueData)
+	else:
+		reportlog.write(json.dumps(meta) + "\n")
 	reportlog.flush()
 	print(json.dumps(meta))
 
@@ -150,6 +168,10 @@ def report(corpus, repo):
 		print(sample)
 		if sample.stat().st_size < 100:
 			# submission was withdrawn
+			continue
+
+		if sample.stem in skipSamples:
+			print(sample.stem, "already reported")
 			continue
 
 		report = {"engines": {}, "sample": sample.stem}
@@ -162,10 +184,10 @@ def report(corpus, repo):
 			capture_files(d, exclude_all=True)
 			print(d)
 			maindoc = get_maindoc(d).name # use relativ path for deterministic xelatex logs
-			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=30, cwd=d, env=env)
+			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60, cwd=d, env=env)
 			# TODO: the first run might influence the second one
 			start = time.time()
-			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=30, cwd=d, env=env)
+			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
 			# results = capture_files(d)
@@ -181,7 +203,7 @@ def report(corpus, repo):
 			# the .xdv file might be interesting
 			subprocess.run([tectonic, "--outfmt=xdv", get_maindoc(d)], timeout=60, cwd=d, env=env)
 			start = time.time()
-			test = subprocess.run([tectonic, "--keep-logs", get_maindoc(d)], timeout=30, cwd=d, env=env)
+			test = subprocess.run([tectonic, "--keep-logs", get_maindoc(d)], timeout=60, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
 			logfile = get_maindoc(d).with_suffix(".log")

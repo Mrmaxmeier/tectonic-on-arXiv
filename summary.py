@@ -21,11 +21,14 @@ def summary(report):
 	geomean = defaultdict(lambda: 1)
 	worstSpeed = defaultdict(lambda: (0.0, None))
 	statuscodes = defaultdict(Counter)
+	tags = defaultdict(Counter)
 
 	for el in s:
 		for eng, data in el["engines"].items():
 			if eng not in engines: continue
 			statuscodes[eng].update([data["statuscode"]])
+			if data["tags"]:
+				tags[data["statuscode"]].update(data["tags"])
 		if all([x["statuscode"] == 0 for x in el["engines"].values()]):
 			for eng, data in el["engines"].items():
 				if eng not in engines: continue
@@ -43,6 +46,10 @@ def summary(report):
 	print("status codes:")
 	for eng in engines:
 		print(eng.rjust(9), statuscodes[eng])
+
+	print("tags by statuscode:")
+	for k, v in tags.items():
+		print(" ", k, ":", v)
 
 if __name__ == "__main__":
 	summary()
