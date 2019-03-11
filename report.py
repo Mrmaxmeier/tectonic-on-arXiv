@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import hashlib
+from functools import reduce
 
 # https://stackoverflow.com/a/44873382
 def sha256sum(filename):
@@ -32,6 +33,33 @@ def get_maindoc(p):
 			if b"\\documentclass" in f.read():
 				return x
 	assert False, "multiple entry points?"
+
+TAGS = {
+	'no-font-for-pdf': "Cannot proceed without .vf or \"physical\" font for PDF output...",
+	'latex-file-not-found': "LaTeX Error: File",
+	'undefined-control-sequence': "! Undefined control sequence.",
+	'not-latex': "LaTeX Error: Missing \\begin{document}",
+	'uses-inputenc': "Package inputenc Error: inputenc is not designed for xetex or luatex.",
+	'latex-error': "LaTeX Error",
+	'bib-failed': "\\end{thebibliography}"
+}
+
+IMPLIED_TAGS = {k: set([k_ for k_, v_ in TAGS.items() if v_ in v and k_ != k]) for k, v in TAGS.items()}
+
+def get_tags(p):
+	if p.exists():
+		with open(p) as f:
+			data = f.read()
+	else:
+		return ["no-log-file"]
+	# TODO: aho-croasick
+	res = []
+	for k, v in TAGS.items():
+		if v in data:
+			res.append(k)
+
+	redundant = reduce(lambda a, b: a | b, [IMPLIED_TAGS[tag] for tag in res], set())
+	return sorted(list(set(res) - redundant))
 
 _CAPTURE_EXCLUDE = set()
 def capture_files(d, exclude_all=False):
@@ -140,26 +168,30 @@ def report(corpus, repo):
 			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=30, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
-			report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=capture_files(d))
+			# results = capture_files(d)
+			results = None
+			report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=None)
 
 		with TestEnv(sample) as d:
 			capture_files(d, exclude_all=True)
 			print(d)
 			tectonic = Path(repo) / "target" / "release" / "tectonic"
 			# fetch required files from network
-			subprocess.run([tectonic, "--print", get_maindoc(d)], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
+			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", get_maindoc(d)], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
 			# the .xdv file might be interesting
 			subprocess.run([tectonic, "--outfmt=xdv", get_maindoc(d)], timeout=60, cwd=d, env=env)
 			start = time.time()
 			test = subprocess.run([tectonic, "--keep-logs", get_maindoc(d)], timeout=30, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
-			report["engines"]["tectonic"] = dict(statuscode=test.returncode, seconds=delta, results=capture_files(d))
+			logfile = get_maindoc(d).with_suffix(".log")
+			tags = get_tags(logfile)
+			results = capture_files(d)
+			report["engines"]["tectonic"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=tags)
 		print(json.dumps(report))
 		reportlog.write(json.dumps(report) + "\n")
 		reportlog.flush()
 	reportlog.close()
-		
 
 
 
