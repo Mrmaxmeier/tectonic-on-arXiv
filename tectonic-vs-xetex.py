@@ -33,7 +33,7 @@ def regressions(report):
 	print("regressions", sum(map(len, regressions.values())))
 	for k, v in regressions.items():
 		for x in sorted(v):
-			print(x, k)
+			print(x, k, samples[x]["engines"]["tectonic"]["tags"])
 	print()
 	print("fixes", sum(map(len, fixes.values())))
 	for k, v in fixes.items():

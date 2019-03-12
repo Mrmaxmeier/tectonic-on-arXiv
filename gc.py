@@ -17,7 +17,8 @@ def gc(reports):
 	for r in reports:
 		for pkt in stream(r):
 			for _, data in pkt.get("engines", {}).items():
-				live.update(data["results"].values())
+				if data["results"]:
+					live.update(data["results"].values())
 	files = set([x.name for x in Path("objects").iterdir() if x.is_file()])
 	files -= set([".gitignore"])
 	missing = live - files

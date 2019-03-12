@@ -24,25 +24,43 @@ def sha256sum(filename):
             h.update(mv[:n])
     return h.hexdigest()
 
+
 def get_maindoc(p):
-	def f_filter(x):
-		if x.suffix == '.tex':
-			return True
-		if x.suffix == '.cls':
-			return False
-		return magic.detect_from_filename(x).mime_type == 'text/x-tex'
-	texfiles = list(filter(f_filter, p.iterdir()))
-	if len(texfiles) < 2:
-		return texfiles[0]
-	for x in texfiles:
+	#def f_filter(x):
+	#	if x.suffix == '.tex':
+	#		return True
+	#	if x.suffix in ['.cls', '.sty', '.thm', '.tikz']:
+	#		return False
+	#	return magic.detect_from_filename(x).mime_type == 'text/x-tex'
+	viable = []
+	for x in filter(lambda x: x.suffix == '.tex', p.iterdir()):
+		if x.name == "supplementary.tex":
+			continue # datasets/1702/1702.08884.gz
+		if x.name == "atlas_authlist.tex":
+			continue # datasets/1702/1702.08839.gz
+		if x.name == "main.tex": # datasets/1702/1702.08857.gz
+			return x
+		if x.name == "0_main.tex": # datasets/1702/1702.08571.gz
+			return x
+		if x.name == "QPC-Sup-sub.tex": # 1702.08773
+			return x
+		if x.name in ['paper_ACC17_preprint.tex', 'KirshTLS.tex', 'Main_arXiv.tex', 'paper.tex', 'ieee4double.tex']: # other samples
+			return x
 		with open(x, "rb") as f:
 			data = f.read()
-			if b"\\documentclass" in data or b"\\bye":
-				return x
-	assert False, "multiple entry points?"
+			if b"\\documentclass" in data or b"\\bye" in data:
+				viable.append(x)
+	if not viable and len(list(p.iterdir())) == 1:
+		# probably not a tar archive => it'll be the source file
+		return next(p.iterdir())
+	print(viable)
+	assert viable, "missing entry point"
+	assert len(viable) < 2, "multiple entry points?"
+	return viable[0]
 
 TAGS = {
 	'no-font-for-pdf': "Cannot proceed without .vf or \"physical\" font for PDF output...",
+	'latex-pstricks-not-found': "! LaTeX Error: File `pstricks.sty' not found.",
 	'latex-file-not-found': "LaTeX Error: File",
 	'undefined-control-sequence': "! Undefined control sequence.",
 	'not-latex': "LaTeX Error: Missing \\begin{document}",
@@ -184,10 +202,10 @@ def report(corpus, repo):
 			capture_files(d, exclude_all=True)
 			print(d)
 			maindoc = get_maindoc(d).name # use relativ path for deterministic xelatex logs
-			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60, cwd=d, env=env)
+			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
 			# TODO: the first run might influence the second one
 			start = time.time()
-			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60, cwd=d, env=env)
+			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
 			# results = capture_files(d)
@@ -197,16 +215,17 @@ def report(corpus, repo):
 		with TestEnv(sample) as d:
 			capture_files(d, exclude_all=True)
 			print(d)
+			maindoc = get_maindoc(d)
 			tectonic = Path(repo) / "target" / "release" / "tectonic"
 			# fetch required files from network
-			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", get_maindoc(d)], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
+			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", maindoc], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
 			# the .xdv file might be interesting
-			subprocess.run([tectonic, "--outfmt=xdv", get_maindoc(d)], timeout=60, cwd=d, env=env)
+			subprocess.run([tectonic, "--outfmt=xdv", maindoc], timeout=60*2, cwd=d, env=env)
 			start = time.time()
-			test = subprocess.run([tectonic, "--keep-logs", get_maindoc(d)], timeout=60, cwd=d, env=env)
+			test = subprocess.run([tectonic, "--keep-logs", maindoc], timeout=60*2, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
-			logfile = get_maindoc(d).with_suffix(".log")
+			logfile = maindoc.with_suffix(".log")
 			tags = get_tags(logfile)
 			results = capture_files(d)
 			report["engines"]["tectonic"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=tags)
