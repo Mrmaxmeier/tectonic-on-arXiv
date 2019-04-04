@@ -220,9 +220,9 @@ def report(corpus, repo):
 			# fetch required files from network
 			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", maindoc], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
 			# the .xdv file might be interesting
-			subprocess.run([tectonic, "--outfmt=xdv", maindoc], timeout=60*2, cwd=d, env=env)
+			subprocess.run([tectonic, "--outfmt=xdv", "--only-cached", maindoc], timeout=60*2, cwd=d, env=env)
 			start = time.time()
-			test = subprocess.run([tectonic, "--keep-logs", maindoc], timeout=60*2, cwd=d, env=env)
+			test = subprocess.run([tectonic, "--only-cached", "--keep-logs", maindoc], timeout=60*2, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
 			logfile = maindoc.with_suffix(".log")
