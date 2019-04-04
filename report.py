@@ -144,7 +144,9 @@ def report(corpus, repo):
 
 	name = subprocess.check_output("git describe --always --dirty --tags --exclude continuous".split(), cwd=repo).decode().strip()
 	branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD".split(), cwd=repo).decode().strip()
+	commit = subprocess.check_output("git rev-parse HEAD".split(), cwd=repo).decode().strip()
 	timestamp = subprocess.check_output("git show -s --format=%ci".split(), cwd=repo).decode().strip()
+
 
 	if branch != "HEAD":
 		name = branch + "-" + name
@@ -155,6 +157,9 @@ def report(corpus, repo):
 	meta = {
 		"name": name,
 		"branch": branch,
+		"commit": commit,
+		"link": None,
+		"version": 0,
 		"timestamp": timestamp,
 		"dataset": Path(corpus).stem,
 		"meta": True
