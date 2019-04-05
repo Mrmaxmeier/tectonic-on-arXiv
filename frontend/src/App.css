@@ -36,6 +36,8 @@
 .cr-error { background: #d77026; }
 .cr-test-pass { background: #62a156; }
 .cc-test-pass { background: #62a156; }
+.cc-tag-ok { background: #6c32b8; }
+.cc-tag-failed { background: #116a6d; }
 .cc-error { background: #d77026; }
 .cc-changed { background: repeating-linear-gradient(-45deg, #5630db, #5630db 15px, #5d3dcf 15px, #5d3dcf 30px); }
 .cc-spurious-fixed { background: repeating-linear-gradient(-45deg, #5630db, #5630db 15px, #5d3dcf 15px, #5d3dcf 30px); }
