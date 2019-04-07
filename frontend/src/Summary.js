@@ -7,7 +7,7 @@ class Sample extends PureComponent {
         let id = this.props.sample.sample
 
         let objects = this.props.sample.results
-        let extensions = [".log", ".pdf"]
+        let extensions = [".log", ".xdv", ".pdf"]
             .map(ext => {
                 for (let key of Object.keys(objects))
                     if (key.endsWith(ext))

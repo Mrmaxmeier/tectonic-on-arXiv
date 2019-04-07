@@ -1,5 +1,5 @@
 import React, { Component, PureComponent } from 'react';
-import { HashRouter as Router, Route, Link, NavLink } from "react-router-dom";
+import { HashRouter as Router, Route, Link, NavLink, Redirect } from "react-router-dom";
 import './App.css';
 import { ReportComparison } from './Comparison'
 import { ReportSummary } from './Summary'
@@ -31,15 +31,9 @@ class Navbar extends PureComponent {
           {reportName ? <>Report for <b>{reportName}</b></> : "tectonic-on-arXiv"}
         </h1>
         <ul>
-          <li>
-            <NavLink to="/compare" activeClassName="active">Changes</NavLink>
-          </li>
-          <li>
-            <NavLink to="/summary" activeClassName="active">Summary</NavLink>
-          </li>
-          <li>
-            <a href="https://arxiv.org/help/bulk_data_s3">Dataset</a>
-          </li>
+          <li><NavLink to="/compare" activeClassName="active">Changes</NavLink></li>
+          <li><NavLink to="/summary" activeClassName="active">Summary</NavLink></li>
+          <li><NavLink to="/about" activeClassName="active">About</NavLink></li>
         </ul>
         {samples.length ?
           <div className="count">{samples.length} papers built</div>
@@ -109,12 +103,19 @@ class App extends Component {
   }
 
   render() {
-
+    const { meta } = this.state
     return (
       <div className="App">
         <Router>
           <div>
-            <Route path="/" exact component={() => <Navbar />} />
+            <Route path="/" exact component={() => <Redirect to="/about" />} />
+            <Route path="/about" exact component={() => <>
+              <Navbar />
+              <p>
+                <code>tectonic-on-arXiv</code> is running the <a href="https://github.com/tectonic-typesetting/tectonic">Tectonic TeX engine</a> on a fraction of the <a href="https://arxiv.org/help/bulk_data_s3">arXiv paper dataset.</a>
+              </p>
+              {meta ? <p>{HOST} currently serves {meta.reports.length} reports with {meta.compatible_samples.length} compatible samples.</p> : null}
+            </>} />
             <Route path="/compare/:left/:right" component={({ match }) => {
               let left = this.getReport(match.params.left)
               let right = this.getReport(match.params.right)
@@ -125,11 +126,11 @@ class App extends Component {
             }} />
             <Route path="/compare/" exact component={() => <>
               <Navbar />
-              <ReportSelector link="/compare/" title="Select baseline" meta={this.state.meta} />
+              <ReportSelector link="/compare/" title="Select baseline" meta={meta} />
             </>} />
             <Route path="/compare/:left" exact component={({ match }) => <>
               <Navbar />
-              <ReportSelector link={"/compare/" + match.params.left + "/"} title={`compare ${match.params.left} to`} meta={this.state.meta} />
+              <ReportSelector link={"/compare/" + match.params.left + "/"} title={`compare ${match.params.left} to`} meta={meta} />
             </>} />
             <Route path="/summary/:report" component={({ match }) => {
               let report = this.getReport(match.params.report)
@@ -140,7 +141,7 @@ class App extends Component {
             }} />
             <Route path="/summary" exact component={() => <>
               <Navbar />
-              <ReportSelector link="/summary/" title="Select report" meta={this.state.meta} />
+              <ReportSelector link="/summary/" title="Select report" meta={meta} />
             </>} />
           </div>
         </Router>

@@ -59,13 +59,14 @@ def get_maindoc(p):
 	return viable[0]
 
 TAGS = {
-	'no-font-for-pdf': "Cannot proceed without .vf or \"physical\" font for PDF output...",
+	'no-font-for-pdf': "Cannot proceed without .vf or \"physical\" font for PDF output...", # TODO: this is output from xdvipdfmx
 	'latex-pstricks-not-found': "! LaTeX Error: File `pstricks.sty' not found.",
 	'latex-file-not-found': "LaTeX Error: File",
 	'undefined-control-sequence': "! Undefined control sequence.",
 	'not-latex': "LaTeX Error: Missing \\begin{document}",
 	'uses-inputenc': "Package inputenc Error: inputenc is not designed for xetex or luatex.",
 	'latex-error': "LaTeX Error",
+	'bad-character-code': "! Bad character code",
 	'bib-failed': "\\end{thebibliography}"
 }
 
@@ -77,7 +78,6 @@ def get_tags(p):
 			data = f.read()
 	else:
 		return ["no-log-file"]
-	# TODO: aho-croasick
 	res = []
 	for k, v in TAGS.items():
 		if v in data:
@@ -89,15 +89,10 @@ def get_tags(p):
 _CAPTURE_EXCLUDE = set()
 def capture_files(d, exclude_all=False):
 	global _CAPTURE_EXCLUDE
-	_EXTS = {
-		"application/pdf": ".pdf",
-		"text/plain": ".txt",
-	}
 	captured = {}
 	for f in d.iterdir():
 		if not f.is_file():
 			continue
-		mt = magic.detect_from_filename(f).mime_type
 		digest = sha256sum(f)[:16]
 		if exclude_all:
 			_CAPTURE_EXCLUDE.add(digest)
@@ -105,7 +100,7 @@ def capture_files(d, exclude_all=False):
 		elif digest in _CAPTURE_EXCLUDE:
 			continue
 
-		ext = _EXTS.get(mt, ".bin")
+		ext = f.suffix or ".bin"
 		target = Path("objects") / (digest + ext)
 		if not target.exists():
 			shutil.copy(f, target)
