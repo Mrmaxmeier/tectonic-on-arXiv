@@ -13,6 +13,8 @@ import subprocess
 import tempfile
 import hashlib
 from functools import reduce
+import queue
+import threading
 
 # https://stackoverflow.com/a/44873382
 def sha256sum(filename):
@@ -108,11 +110,13 @@ def capture_files(d, exclude_all=False):
 	return captured
 
 
+_libmagic_threadsafe = threading.Lock()
 
 class TestEnv(object):
 	def __init__(self, sample):
 		self.tmpdir = Path(tempfile.mkdtemp('ttrac'))
-		assert magic.detect_from_filename(sample).mime_type == 'application/x-gzip'
+		with _libmagic_threadsafe:
+			assert magic.detect_from_filename(sample).mime_type == 'application/gzip'
 
 		submission_data_path = self.tmpdir / sample.stem
 
@@ -121,15 +125,61 @@ class TestEnv(object):
 			with open(submission_data_path, "wb") as f:
 				shutil.copyfileobj(gz, f)
 
-		if magic.detect_from_filename(submission_data_path).mime_type == "application/x-tar":
-			with tarfile.open(submission_data_path, 'r') as tar:
-				tar.extractall(path=self.tmpdir)
-			submission_data_path.unlink()
+		with _libmagic_threadsafe:
+			if magic.detect_from_filename(submission_data_path).mime_type == "application/x-tar":
+				with tarfile.open(submission_data_path, 'r') as tar:
+					tar.extractall(path=self.tmpdir)
+				submission_data_path.unlink()
 	def __enter__(self):
 		return self.tmpdir
 	def __exit__(self, exc, value, tb):
 		shutil.rmtree(self.tmpdir)
 
+def do_work(sample, repo):
+	print(sample)
+	if sample.stat().st_size < 100:
+		# submission was withdrawn
+		return
+
+	report = {"engines": {}, "sample": sample.stem}
+
+	env = os.environ.copy()
+	env["SOURCE_DATE_EPOCH"] = "1456304492"
+	env["LD_PRELOAD"] = "/usr/lib/faketime/libfaketime.so.1"
+	env["FAKETIME"] = "2011-11-11 11:11:11"
+	with TestEnv(sample) as d:
+			capture_files(d, exclude_all=True)
+			print(d)
+			maindoc = get_maindoc(d).name # use relativ path for deterministic xelatex logs
+			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
+			# TODO: the first run might influence the second one
+			start = time.time()
+			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
+			delta = time.time() - start
+			print(test)
+			# results = capture_files(d)
+			results = None
+			report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=None)
+
+	with TestEnv(sample) as d:
+			capture_files(d, exclude_all=True)
+			print(d)
+			maindoc = get_maindoc(d)
+			tectonic = Path(repo) / "target" / "release" / "tectonic"
+			# fetch required files from network
+			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", maindoc], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
+			# the .xdv file might be interesting
+			subprocess.run([tectonic, "--outfmt=xdv", "--only-cached", maindoc], timeout=60*2, cwd=d, env=env)
+			start = time.time()
+			test = subprocess.run([tectonic, "--only-cached", "--keep-logs", maindoc], timeout=60*2, cwd=d, env=env)
+			delta = time.time() - start
+			print(test)
+			logfile = maindoc.with_suffix(".log")
+			tags = get_tags(logfile)
+			results = capture_files(d)
+			report["engines"]["tectonic"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=tags)
+	print(json.dumps(report))
+	return report
 
 @click.command()
 @click.argument('corpus', type=click.Path(exists=True))
@@ -182,56 +232,40 @@ def report(corpus, repo):
 
 	subprocess.check_output("cargo build --release".split(), cwd=repo)
 
-	for sample in Path(corpus).iterdir():
-		print(sample)
-		if sample.stat().st_size < 100:
-			# submission was withdrawn
-			continue
+	work = queue.Queue()
+	outlock = threading.Lock()
+	num_worker_threads = 8
 
+	def worker():
+		while True:
+			item = work.get()
+			if item is None:
+				break
+			report = do_work(item, repo)
+			work.task_done()
+			if report:
+				with outlock:
+					reportlog.write(json.dumps(report) + "\n")
+					reportlog.flush()
+
+	threads = []
+	for i in range(num_worker_threads):
+		t = threading.Thread(target=worker)
+		t.start()
+		threads.append(t)
+
+	for sample in Path(corpus).iterdir():
 		if sample.stem in skipSamples:
 			print(sample.stem, "already reported")
 			continue
+		work.put(sample)
 
-		report = {"engines": {}, "sample": sample.stem}
+	work.join()
 
-		env = os.environ.copy()
-		env["SOURCE_DATE_EPOCH"] = "1456304492"
-		env["LD_PRELOAD"] = "/usr/lib/faketime/libfaketime.so.1"
-		env["FAKETIME"] = "2011-11-11 11:11:11"
-		with TestEnv(sample) as d:
-			capture_files(d, exclude_all=True)
-			print(d)
-			maindoc = get_maindoc(d).name # use relativ path for deterministic xelatex logs
-			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
-			# TODO: the first run might influence the second one
-			start = time.time()
-			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
-			delta = time.time() - start
-			print(test)
-			# results = capture_files(d)
-			results = None
-			report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=None)
-
-		with TestEnv(sample) as d:
-			capture_files(d, exclude_all=True)
-			print(d)
-			maindoc = get_maindoc(d)
-			tectonic = Path(repo) / "target" / "release" / "tectonic"
-			# fetch required files from network
-			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", maindoc], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
-			# the .xdv file might be interesting
-			subprocess.run([tectonic, "--outfmt=xdv", "--only-cached", maindoc], timeout=60*2, cwd=d, env=env)
-			start = time.time()
-			test = subprocess.run([tectonic, "--only-cached", "--keep-logs", maindoc], timeout=60*2, cwd=d, env=env)
-			delta = time.time() - start
-			print(test)
-			logfile = maindoc.with_suffix(".log")
-			tags = get_tags(logfile)
-			results = capture_files(d)
-			report["engines"]["tectonic"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=tags)
-		print(json.dumps(report))
-		reportlog.write(json.dumps(report) + "\n")
-		reportlog.flush()
+	for i in range(num_worker_threads):
+		work.put(None)
+	for t in threads:
+		t.join()
 	reportlog.close()
 
 
