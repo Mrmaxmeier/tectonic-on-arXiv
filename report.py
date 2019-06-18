@@ -231,6 +231,12 @@ def report(corpus, repo):
 	print(json.dumps(meta))
 
 	subprocess.check_output("cargo build --release".split(), cwd=repo)
+	tectonic = Path(repo) / "target" / "release" / "tectonic"
+	# ensure that the tectonic binary is not replaced with another version
+	tectonic_temp = tempfile.NamedTemporaryFile(suffix="tectonic", delete=False)
+	shutil.copy2(tectonic, tectonic_temp.name)
+	tectonic_temp.close()
+	tectonic = tectonic_temp.name
 
 	work = queue.Queue()
 	outlock = threading.Lock()

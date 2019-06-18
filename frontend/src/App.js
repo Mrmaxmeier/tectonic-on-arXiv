@@ -4,6 +4,7 @@ import './App.css';
 import { ReportComparison } from './Comparison'
 import { ReportSummary } from './Summary'
 
+// export const HOST = 'http://localhost:7331'
 export const HOST = 'https://tt.ente.ninja'
 
 // css/html adapted from
@@ -81,7 +82,7 @@ class App extends Component {
     fetch(HOST + "/reports/meta.json")
       .then(res => res.json())
       .then(meta => {
-        meta.reports.sort((a, b) => a.name > b.name ? -1 : (a.name < b.name ? 1 : 0))
+        meta.reports.sort((a, b) => a.timestamp > b.timestamp ? -1 : (a.timestamp < b.timestamp ? 1 : 0))
         this.setState({ meta })
       })
   }

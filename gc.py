@@ -36,7 +36,7 @@ def gc(reports):
 	print("unique artifact sizes")
 	shared = set(files)
 	for r in reports:
-		print(objectSize(uniques[r]), r)
+		print(objectSize(uniques.get(r, set())), r)
 		shared -= uniques[r]
 	print(objectSize(shared), "shared")
 
