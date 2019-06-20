@@ -16,6 +16,8 @@ from functools import reduce
 import queue
 import threading
 
+TEST_XELATEX = False
+
 # https://stackoverflow.com/a/44873382
 def sha256sum(filename):
     h  = hashlib.sha256()
@@ -27,27 +29,54 @@ def sha256sum(filename):
     return h.hexdigest()
 
 
-def get_maindoc(p):
-	#def f_filter(x):
-	#	if x.suffix == '.tex':
-	#		return True
-	#	if x.suffix in ['.cls', '.sty', '.thm', '.tikz']:
-	#		return False
-	#	return magic.detect_from_filename(x).mime_type == 'text/x-tex'
+SKIP_FILES = [
+	"supplementary.tex", # datasets/1702/1702.08884.gz
+	"atlas_authlist.tex", # datasets/1702/1702.08839.gz
+	"Preamble.tex",
+	"SuppMat.tex",
+	"supp.tex",
+	"skeleton.tex",
+	"biography.tex",
+	"author_information.tex",
+	"framed.tex",
+	"writeup.tex",
+]
+
+ENTRY_FILES = [
+	"main.tex", # datasets/1702/1702.08857.gz
+	"0_main.tex", # datasets/1702/1702.08571.gz
+	"QPC-Sup-sub.tex", # 1702.08773
+	'paper_ACC17_preprint.tex',
+	'KirshTLS.tex',
+	'Main_arXiv.tex',
+	'paper.tex', 'thesis.tex',
+	'arxiv.tex',
+	'ieee4double.tex'
+	'tightness-dist.tex',
+	'lls-connected.tex',
+	'flatsArXiv2.tex',
+	'Proceedings-420-STAR-on-Cori.tex',
+	'Runge_causal_discovery_2018_arxiv.tex',
+	'TSE_Joint_PEV_charging_network_and_PV_generation_planning_2.1.tex',
+	'ICC2017_Secure_Clustered_Dsitributed_Storage_Against_Eavesdropper_Rev_2017.2.22.tex',
+	'w51_review.tex',
+	'LumpyPlanet_04_2017.tex',
+	'EBEXPaper3.tex',
+	'SM0912.tex',
+	'setsph37.tex',
+	'Wi_Kn_2017_Arxiv.tex',
+	'Hoffmann_Antiskyrmion.tex',
+	'ijcai17.tex',
+	'full-eight-vertex.tex',
+	'BigVARV3.tex',
+	'BohrSomRevistdAll.tex',
+]
+
+def get_maindoc(p, sample):
 	viable = []
 	for x in filter(lambda x: x.suffix == '.tex', p.iterdir()):
-		if x.name == "supplementary.tex":
-			continue # datasets/1702/1702.08884.gz
-		if x.name == "atlas_authlist.tex":
-			continue # datasets/1702/1702.08839.gz
-		if x.name == "main.tex": # datasets/1702/1702.08857.gz
-			return x
-		if x.name == "0_main.tex": # datasets/1702/1702.08571.gz
-			return x
-		if x.name == "QPC-Sup-sub.tex": # 1702.08773
-			return x
-		if x.name in ['paper_ACC17_preprint.tex', 'KirshTLS.tex', 'Main_arXiv.tex', 'paper.tex', 'ieee4double.tex']: # other samples
-			return x
+		if x.name in SKIP_FILES: continue
+		if x.name in ENTRY_FILES: return x
 		with open(x, "rb") as f:
 			data = f.read()
 			if b"\\documentclass" in data or b"\\bye" in data:
@@ -55,7 +84,7 @@ def get_maindoc(p):
 	if not viable and len(list(p.iterdir())) == 1:
 		# probably not a tar archive => it'll be the source file
 		return next(p.iterdir())
-	print(viable)
+	print(sample, viable)
 	assert viable, "missing entry point"
 	assert len(viable) < 2, "multiple entry points?"
 	return viable[0]
@@ -88,7 +117,7 @@ def get_tags(p):
 	redundant = reduce(lambda a, b: a | b, [IMPLIED_TAGS[tag] for tag in res], set())
 	return sorted(list(set(res) - redundant))
 
-_CAPTURE_EXCLUDE = set()
+_CAPTURE_EXCLUDE = set() # TODO: why is this global
 def capture_files(d, exclude_all=False):
 	global _CAPTURE_EXCLUDE
 	captured = {}
@@ -140,6 +169,9 @@ def do_work(sample, repo):
 	if sample.stat().st_size < 100:
 		# submission was withdrawn
 		return
+	if sample.stem == "1702.07035": return # no tex sources
+	if sample.stem == "1702.07668": return
+	if sample.stem == "1702.06452": return
 
 	report = {"engines": {}, "sample": sample.stem}
 
@@ -147,24 +179,25 @@ def do_work(sample, repo):
 	env["SOURCE_DATE_EPOCH"] = "1456304492"
 	env["LD_PRELOAD"] = "/usr/lib/faketime/libfaketime.so.1"
 	env["FAKETIME"] = "2011-11-11 11:11:11"
-	with TestEnv(sample) as d:
-			capture_files(d, exclude_all=True)
-			print(d)
-			maindoc = get_maindoc(d).name # use relativ path for deterministic xelatex logs
-			subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
-			# TODO: the first run might influence the second one
-			start = time.time()
-			test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
-			delta = time.time() - start
-			print(test)
-			# results = capture_files(d)
-			results = None
-			report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=None)
+	if TEST_XELATEX:
+		with TestEnv(sample) as d:
+				capture_files(d, exclude_all=True)
+				print(d)
+				maindoc = get_maindoc(d, sample).name # use relativ path for deterministic xelatex logs
+				subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
+				# TODO: the first run might influence the second one
+				start = time.time()
+				test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
+				delta = time.time() - start
+				print(test)
+				# results = capture_files(d)
+				results = None
+				report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=None)
 
 	with TestEnv(sample) as d:
 			capture_files(d, exclude_all=True)
 			print(d)
-			maindoc = get_maindoc(d)
+			maindoc = get_maindoc(d, sample)
 			tectonic = Path(repo) / "target" / "release" / "tectonic"
 			# fetch required files from network
 			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", maindoc], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
@@ -246,6 +279,7 @@ def report(corpus, repo):
 		while True:
 			item = work.get()
 			if item is None:
+				print("worker shutting down")
 				break
 			report = do_work(item, repo)
 			work.task_done()
