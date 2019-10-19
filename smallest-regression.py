@@ -51,13 +51,12 @@ def compare(a, b, engine):
 	sB = find(entriesB, sample)
 	sA = sA["engines"][engine]
 	sB = sB["engines"][engine]
-	if sA["statuscode"] != sB["statuscode"]:
-		different.add(sample)
 		
 	print("sample differs:", sample, f"({size} bytes gz'd)")
 	_a = sA["statuscode"]
 	_b = sB["statuscode"]
 	print("statuscodes:".rjust(18), _a, " = " if _a == _b else " ! ", _b)
+	objects = set(sA['results'].keys()) | set(sB['results'].keys())
 	for k in objects:
 		_a = sA['results'].get(k, ' ' * 20)
 		_b = sB['results'].get(k, ' ' * 20)
