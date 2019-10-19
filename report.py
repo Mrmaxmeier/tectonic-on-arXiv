@@ -164,6 +164,16 @@ class TestEnv(object):
 	def __exit__(self, exc, value, tb):
 		shutil.rmtree(self.tmpdir)
 
+BUNDLE_URL = "https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar"
+ARGUMENTS = [
+        "-w", BUNDLE_URL,
+        "--only-cached", "--keep-logs", "--keep-intermediates",
+        "-Z", "pdf-deterministic-tags",
+        "-Z", "pdf-disable-compression",
+        "-Z", "keep-xdv",
+#        "-Z", "omit-build-date",
+]
+
 def do_work(sample, repo):
 	print(sample)
 	if sample.stat().st_size < 100:
@@ -177,34 +187,15 @@ def do_work(sample, repo):
 
 	env = os.environ.copy()
 	env["SOURCE_DATE_EPOCH"] = "1456304492"
-	env["LD_PRELOAD"] = "/usr/lib/faketime/libfaketime.so.1"
-	env["FAKETIME"] = "2011-11-11 11:11:11"
-	if TEST_XELATEX:
-		with TestEnv(sample) as d:
-				capture_files(d, exclude_all=True)
-				print(d)
-				maindoc = get_maindoc(d, sample).name # use relativ path for deterministic xelatex logs
-				subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
-				# TODO: the first run might influence the second one
-				start = time.time()
-				test = subprocess.run(["xelatex", '-interaction=batchmode', '-no-shell-escape', maindoc], capture_output=True, timeout=60*2, cwd=d, env=env)
-				delta = time.time() - start
-				print(test)
-				# results = capture_files(d)
-				results = None
-				report["engines"]["xelatex"] = dict(statuscode=test.returncode, seconds=delta, results=results, tags=None)
-
 	with TestEnv(sample) as d:
 			capture_files(d, exclude_all=True)
 			print(d)
 			maindoc = get_maindoc(d, sample)
 			tectonic = Path(repo) / "target" / "release" / "tectonic"
 			# fetch required files from network
-			subprocess.run([tectonic, "--print", "-w=https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar", maindoc], timeout=60*5, cwd=d) # don't inject libfaketime. fake time breaks https cert validation
-			# the .xdv file might be interesting
-			subprocess.run([tectonic, "--outfmt=xdv", "--only-cached", maindoc], timeout=60*2, cwd=d, env=env)
+			subprocess.run([tectonic, "-w="+BUNDLE_URL, maindoc], timeout=60*5, cwd=d, env=env)
 			start = time.time()
-			test = subprocess.run([tectonic, "--only-cached", "--keep-logs", maindoc], timeout=60*2, cwd=d, env=env)
+			test = subprocess.run([tectonic] + ARGUMENTS + [maindoc], timeout=60*2, cwd=d, env=env)
 			delta = time.time() - start
 			print(test)
 			logfile = maindoc.with_suffix(".log")
@@ -240,6 +231,7 @@ def report(corpus, repo):
 		"version": 0,
 		"timestamp": timestamp,
 		"dataset": Path(corpus).stem,
+                "bundle_url": BUNDLE_URL,
 		"meta": True
 	}
 
