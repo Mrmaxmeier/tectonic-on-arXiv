@@ -166,12 +166,12 @@ class TestEnv(object):
 
 BUNDLE_URL = "https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar"
 ARGUMENTS = [
-        "-w", BUNDLE_URL,
-        "--only-cached", "--keep-logs", "--keep-intermediates",
-        "-Z", "pdf-deterministic-tags",
-        "-Z", "pdf-disable-compression",
-        "-Z", "keep-xdv",
-#        "-Z", "omit-build-date",
+	"-w", BUNDLE_URL,
+	"--only-cached", "--keep-logs", "--keep-intermediates",
+	"-Z", "pdf-deterministic-tags",
+	# "-Z", "pdf-disable-compression", # produces >10 GB of artifacts
+	"-Z", "keep-xdv",
+	# "-Z", "omit-build-date", # not implemented
 ]
 
 def do_work(sample, repo):
@@ -265,7 +265,7 @@ def report(corpus, repo):
 
 	work = queue.Queue()
 	outlock = threading.Lock()
-	num_worker_threads = 8
+	num_worker_threads = 7
 
 	def worker():
 		while True:
