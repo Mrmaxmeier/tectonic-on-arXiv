@@ -21,8 +21,10 @@
     "test:watch": "jest --watch --notify --notifyMode=change --coverage"
   },
   "dependencies": {
-    "nock": "^10.0.0",
     "@types/nock": "^9.3.0",
+    "@types/nodegit": "^0.24.12",
+    "nock": "^10.0.0",
+    "nodegit": "^0.26.2",
     "probot": "^7.2.0"
   },
   "devDependencies": {

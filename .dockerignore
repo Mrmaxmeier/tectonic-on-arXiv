@@ -1,0 +1,10 @@
+arXiv_src_*.tar
+arXiv_src_manifest.xml
+ci-repo
+ci-cargo-cache
+ci-tex-cache
+datasets
+objects
+reports
+frontend
+github-ci/node_modules

@@ -167,10 +167,11 @@ class TestEnv(object):
 BUNDLE_URL = "https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar"
 ARGUMENTS = [
 	"-w", BUNDLE_URL,
-	"--only-cached", "--keep-logs", "--keep-intermediates",
-	"-Z", "pdf-deterministic-tags",
+	#"--only-cached", "--keep-logs", "--keep-intermediates",
+	"-C", "--keep-logs", "--keep-intermediates",
+	#"-Z", "pdf-deterministic-tags",
 	# "-Z", "pdf-disable-compression", # produces >10 GB of artifacts
-	"-Z", "keep-xdv",
+	#"-Z", "keep-xdv",
 	# "-Z", "omit-build-date", # not implemented
 ]
 
@@ -192,8 +193,6 @@ def do_work(sample, repo):
 			print(d)
 			maindoc = get_maindoc(d, sample)
 			tectonic = Path(repo) / "target" / "release" / "tectonic"
-			# fetch required files from network
-			subprocess.run([tectonic, "-w="+BUNDLE_URL, maindoc], timeout=60*5, cwd=d, env=env)
 			start = time.time()
 			test = subprocess.run([tectonic] + ARGUMENTS + [maindoc], timeout=60*2, cwd=d, env=env)
 			delta = time.time() - start

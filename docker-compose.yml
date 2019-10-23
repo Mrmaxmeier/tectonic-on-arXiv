@@ -1,12 +1,12 @@
 version: '3'
 
 services:
-  tectonic-on-arxiv:
-    build: docker
-    user: ${CURRENT_UID}
+  app:
+    build: .
+    user: ${UID}
     volumes:
       - ./datasets:/datasets:ro
       - ./reports:/reports:rw
       - ./ci-repo:/repo:rw
-      - ./ci-tex-cache:~/.cache/Tectonic:rw
-      - ./ci-cargo-cache:~/.cargo:rw
+      - ./ci-tex-cache:/home/ci/.cache/Tectonic:rw
+      - ./ci-cargo-cache:/home/ci/.cargo:rw
