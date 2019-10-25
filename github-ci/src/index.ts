@@ -112,8 +112,8 @@ export = (app: Application) => {
         let speed = (lines / seconds)
         let SAMPLES = 2447
         let etaSecs = Math.round((SAMPLES - lines) / speed)
-        console.log(lines, seconds, speed, etaSecs)
-        let eta = `ETA: ${etaSecs}s - ${lines} / ${SAMPLES}`
+        let etaT = etaSecs > 270 ? Math.round(etaSecs / 60) + 'm' : etaSecs + 's'
+        let eta = `ETA: ${etaT} - ${lines} / ${SAMPLES}`
         console.log("still goin " + eta)
         context.github.checks.update(context.repo({
           check_run_id,
