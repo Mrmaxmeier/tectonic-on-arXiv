@@ -20,7 +20,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup-ini
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /root
-COPY report.py .
+COPY report_ci.py .
 COPY meta.py .
 COPY github-ci ./github-ci
 
