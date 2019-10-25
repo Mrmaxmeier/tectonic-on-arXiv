@@ -37,6 +37,8 @@ export = (app: Application) => {
       }
     }))
 
+    let etaTimer = undefined
+
     try {
       let repo = await Repository.open("/tmp/testing123")
       await repo.fetchAll()
@@ -96,7 +98,8 @@ export = (app: Application) => {
         }
       }))
 
-      let etaTimer = setInterval(async () => {
+      etaTimer = setInterval(async () => {
+        return // TODO
         let eta = '15m30s - 11234 / 17000'
         await context.github.checks.update(context.repo({
           check_run_id,
@@ -109,7 +112,27 @@ export = (app: Application) => {
         console.log("updated ETA", eta)
       }, 15000)
 
-      await sleep(10000)
+      let res = spawnSync("python3 report_ci.py datasets/1702 /repo", {
+        cwd: "/home/ci/"
+      })
+      clearInterval(etaTimer)
+
+      if (res.status !== 0) {
+        await context.github.checks.create(context.repo({
+          name,
+          head_branch,
+          head_sha,
+          status: 'completed',
+          started_at,
+          conclusion: 'success',
+          completed_at: new Date().toISOString(),
+          output: {
+            title: 'tectonic-on-arXiv',
+            summary: 'The check has passed!'
+          }
+        }))
+      }
+
 
       /*
       await context.github.checks.create(context.repo({
@@ -138,6 +161,9 @@ export = (app: Application) => {
       }))
 
     } catch (e) {
+      if (etaTimer)
+        clearInterval(etaTimer)
+
       await context.github.checks.create(context.repo({
         name,
         head_branch,

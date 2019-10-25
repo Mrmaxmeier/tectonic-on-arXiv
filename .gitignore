@@ -1,3 +1,4 @@
+__pycache__
 arXiv_src_*.tar
 arXiv_src_manifest.xml
 ci-repo

@@ -21,7 +21,7 @@ def meta(reports):
         for pkt in stream(r):
             if "name" in pkt or "meta" in pkt:
                 _reports.append(pkt)
-            if pkt["statuscode"] == 0:
+            elif pkt["statuscode"] == 0:
                 compatible_samples.add(pkt["sample"])
     data = dict(reports=_reports, compatible_samples=list(
         sorted(compatible_samples)))
