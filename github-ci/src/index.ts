@@ -129,6 +129,14 @@ export = (app: Application) => {
       let proc = spawn("python3", ["report_ci.py", "datasets/1702", "/repo", head_sha], {
         cwd: "/root/"
       })
+      proc.on("message", (msg) => { console.log("message", msg) })
+      proc.on("disconnect", () => { console.log("disconnect") })
+      proc.on("close", () => { console.log("close") })
+      proc.on("error", (error) => { console.log("error", error) })
+
+      // devnull stdin/stdout so that i/o buffers don't break subprocess
+      proc.stdout.on("data", () => { })
+      proc.stderr.on("data", () => { })
       await new Promise(resolve => proc.on("exit", resolve))
       console.log("report_ci.py finished")
       clearInterval(etaTimer)
