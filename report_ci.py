@@ -75,7 +75,7 @@ class TestEnv(object):
 BUNDLE_URL = "https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar"
 ARGUMENTS = [
     "-w", BUNDLE_URL,
-    "-C", "--keep-logs", "--keep-intermediates",
+    "--keep-logs", "--keep-intermediates",
 ]
 
 

@@ -73,6 +73,9 @@ export = (app: Application) => {
         }
       }))
 
+      console.log("finished building")
+
+
       let build_res = spawnSync("cargo", ["build", "--release"], {
         cwd: "/repo"
       })
@@ -106,9 +109,11 @@ export = (app: Application) => {
         let res = readFileSync('/root/reports/' + head_sha + '.jsonl')
         let lines = res.toString().match(/\n/g)!.length
         let seconds = (new Date() as any - (report_start as any)) as number / 1000
-        let SAMPLES = 2500
-        let etaSecs = Math.round((SAMPLES - lines) / (lines / seconds) / 60)
-        let eta = `${etaSecs}s - ${lines} / ${SAMPLES}`
+        let speed = (lines / seconds)
+        let SAMPLES = 2447
+        let etaSecs = Math.round((SAMPLES - lines) / speed)
+        console.log(lines, seconds, speed, etaSecs)
+        let eta = `ETA: ${etaSecs}s - ${lines} / ${SAMPLES}`
         console.log("still goin " + eta)
         context.github.checks.update(context.repo({
           check_run_id,
