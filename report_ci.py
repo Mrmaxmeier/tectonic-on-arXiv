@@ -97,21 +97,16 @@ def do_work(sample, maindoc, tectonic):
     return report
 
 
-def report(corpus, repo):
+def report(corpus, repo, name):
     with open(corpus + ".json") as f:
         sample_maindoc = json.load(f)
 
-    name = subprocess.check_output(
-        "git describe --always --dirty --tags --exclude continuous".split(), cwd=repo).decode().strip()
     branch = subprocess.check_output(
         "git rev-parse --abbrev-ref HEAD".split(), cwd=repo).decode().strip()
     commit = subprocess.check_output(
         "git rev-parse HEAD".split(), cwd=repo).decode().strip()
     timestamp = subprocess.check_output(
         "git show -s --format=%ci".split(), cwd=repo).decode().strip()
-
-    if branch != "HEAD":
-        name = branch + "-" + name
 
     meta = {
         "name": name,
@@ -161,7 +156,7 @@ def report(corpus, repo):
                 reportlog.flush()
 
     threads = []
-    for i in range(num_worker_threads):
+    for _ in range(num_worker_threads):
         t = threading.Thread(target=worker)
         t.start()
         threads.append(t)
@@ -180,5 +175,5 @@ def report(corpus, repo):
     reportlog.close()
 
 
-assert len(sys.argv) == 3, "report_ci.py corpus repo"
-report(sys.argv[1], sys.argv[2])
+assert len(sys.argv) == 4, "report_ci.py corpus repo name"
+report(sys.argv[1], sys.argv[2], sys.argv[3])

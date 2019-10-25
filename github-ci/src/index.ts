@@ -1,6 +1,7 @@
 import { Application, Context } from 'probot'
 import { Merge, Repository, Commit, Reset } from 'nodegit'
 import { spawnSync } from 'child_process'
+import { fstat, readFile, readFileSync } from 'fs'
 
 const sleep = (m: number) => new Promise(r => setTimeout(r, m))
 
@@ -99,10 +100,15 @@ export = (app: Application) => {
         }
       }))
 
+      let report_start = new Date()
       etaTimer = setInterval(async () => {
-        console.log("still goin")
-        return // TODO
-        let eta = '15m30s - 11234 / 17000'
+        let res = readFileSync('/root/reports/' + head_sha + '.jsonl')
+        let lines = res.toString().match(/\n/g)!.length
+        let seconds = (new Date() as any - (report_start as any)) as number / 1000
+        let SAMPLES = 2500
+        let etaSecs = Math.round((SAMPLES - lines) / (lines / seconds) / 60)
+        let eta = `${etaSecs}s - ${lines} / ${SAMPLES}`
+        console.log("still goin " + eta)
         await context.github.checks.update(context.repo({
           check_run_id,
           status: 'in_progress',
@@ -111,11 +117,10 @@ export = (app: Application) => {
             summary: eta
           }
         }))
-        console.log("updated ETA", eta)
       }, 15000)
 
       console.log("starting report_ci.py")
-      let res = spawnSync("python3", ["report_ci.py", "datasets/1702", "/repo"], {
+      let res = spawnSync("python3", ["report_ci.py", "datasets/1702", "/repo", head_sha], {
         cwd: "/root/"
       })
       clearInterval(etaTimer)
@@ -127,31 +132,16 @@ export = (app: Application) => {
           head_sha,
           status: 'completed',
           started_at,
-          conclusion: 'success',
+          conclusion: 'cancelled',
           completed_at: new Date().toISOString(),
           output: {
             title: 'tectonic-on-arXiv',
-            summary: 'The check has passed!'
+            summary: 'failed to run report_ci.py'
           }
         }))
+        return
       }
 
-
-      /*
-      await context.github.checks.create(context.repo({
-        name,
-        head_branch,
-        head_sha,
-        status: 'completed',
-        started_at,
-        conclusion: 'success',
-        completed_at: new Date().toISOString(),
-        output: {
-          title: 'tectonic-on-arXiv',
-          summary: 'The check has passed!'
-        }
-      }))
-      */
       await context.github.checks.update(context.repo({
         check_run_id,
         status: 'completed',
@@ -159,7 +149,7 @@ export = (app: Application) => {
         completed_at: new Date().toISOString(),
         output: {
           title: 'tectonic-on-arXiv',
-          summary: 'The check has passed!'
+          summary: 'ran report_ci.py'
         }
       }))
 
