@@ -65,7 +65,7 @@ class Category extends PureComponent {
 
 export class ReportSummary extends PureComponent {
     render() {
-        let samples = this.props.report.samples.map(({ sample, engines }) => ({ sample, ...engines.tectonic }))
+        let samples = this.props.report.samples
         let ok = []
         let failed = []
         let internalError = []

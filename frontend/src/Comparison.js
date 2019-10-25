@@ -87,9 +87,9 @@ export class ReportComparison extends PureComponent {
         let A = {}
         let B = {}
         for (let sample of this.props.left.samples)
-            A[sample.sample] = sample.engines.tectonic
+            A[sample.sample] = sample
         for (let sample of this.props.right.samples)
-            B[sample.sample] = sample.engines.tectonic
+            B[sample.sample] = sample
 
         let identical = []
         let different = []

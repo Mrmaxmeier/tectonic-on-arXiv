@@ -25,7 +25,7 @@ export = (app: Application) => {
 
     let base_sha = pull_requests[0].base.sha
 
-    await context.github.checks.create(context.repo({
+    let { data: { id: check_run_id } } = await context.github.checks.create(context.repo({
       name,
       head_branch,
       head_sha,
@@ -42,13 +42,10 @@ export = (app: Application) => {
       await repo.fetchAll()
       let commit = await Commit.lookup(repo, head_sha)
       if (!commit) {
-        await context.github.checks.create(context.repo({
-          name,
-          head_branch,
-          head_sha,
+        await context.github.checks.update(context.repo({
+          check_run_id,
           status: 'completed',
           conclusion: 'cancelled',
-          started_at,
           completed_at: new Date().toISOString(),
           output: {
             title: 'tectonic-on-arXiv',
@@ -65,12 +62,9 @@ export = (app: Application) => {
       console.log("did checkout")
 
 
-      await context.github.checks.create(context.repo({
-        name,
-        head_branch,
-        head_sha,
+      await context.github.checks.update(context.repo({
+        check_run_id,
         status: 'in_progress',
-        started_at,
         output: {
           title: 'building...',
           summary: ''
@@ -80,33 +74,40 @@ export = (app: Application) => {
       let build_res = spawnSync("cargo build --release")
 
       if (build_res.status !== 0) {
-        await context.github.checks.create(context.repo({
-          name,
-          head_branch,
-          head_sha,
+        await context.github.checks.update(context.repo({
+          check_run_id,
           status: 'completed',
-          conclusion: 'cancelled',
-          started_at,
           completed_at: new Date().toISOString(),
+          conclusion: 'cancelled',
           output: {
             title: 'tectonic-on-arXiv',
             summary: `couldn't build\n\`\`\`\n${build_res.output}\n\`\`\``
           }
         }))
+
         return
       }
-
-      await context.github.checks.create(context.repo({
-        name,
-        head_branch,
-        head_sha,
+      await context.github.checks.update(context.repo({
+        check_run_id,
         status: 'in_progress',
-        started_at,
         output: {
-          title: 'Probot check!',
-          summary: 'is running'
+          title: 'tectonic-on-arXiv',
+          summary: ''
         }
       }))
+
+      let etaTimer = setInterval(async () => {
+        let eta = '15m30s - 11234 / 17000'
+        await context.github.checks.update(context.repo({
+          check_run_id,
+          status: 'in_progress',
+          output: {
+            title: `tectonic-on-arXiv - ${eta}`,
+            summary: eta
+          }
+        }))
+        console.log("updated ETA", eta)
+      }, 15000)
 
       await sleep(10000)
 
@@ -125,12 +126,9 @@ export = (app: Application) => {
         }
       }))
       */
-      await context.github.checks.create(context.repo({
-        name,
-        head_branch,
-        head_sha,
+      await context.github.checks.update(context.repo({
+        check_run_id,
         status: 'completed',
-        started_at,
         conclusion: 'failure',
         completed_at: new Date().toISOString(),
         output: {

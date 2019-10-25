@@ -5,8 +5,9 @@ services:
     build: .
     user: ${UID}
     volumes:
-      - ./datasets:/datasets:ro
-      - ./reports:/reports:rw
+      - ./datasets:/home/ci/datasets:ro
+      - ./reports:/home/ci/reports:rw
+      - ./objects:/home/ci/objects:rw
       - ./ci-repo:/repo:rw
       - ./ci-tex-cache:/home/ci/.cache/Tectonic:rw
       - ./ci-cargo-cache:/home/ci/.cargo:rw
