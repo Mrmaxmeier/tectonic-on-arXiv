@@ -7,6 +7,8 @@ const sleep = (m: number) => new Promise(r => setTimeout(r, m))
 
 export = (app: Application) => {
   async function check(context: Context) {
+    if (!context.payload.check_suite)
+      return
     const started_at = new Date().toISOString()
     const { head_branch, head_sha, pull_requests } = context.payload.check_suite
     const name = 'tectonic-on-arXiv'
@@ -70,7 +72,7 @@ export = (app: Application) => {
         }
       }))
 
-      let build_res = spawnSync("cargo build --release", {
+      let build_res = spawnSync("cargo", ["build", "--release"], {
         cwd: "/repo"
       })
 
@@ -82,7 +84,7 @@ export = (app: Application) => {
           conclusion: 'cancelled',
           output: {
             title: 'tectonic-on-arXiv',
-            summary: `couldn't build\n\`\`\`\n${build_res.output}\n\`\`\``
+            summary: `couldn't build\n\`\`\`\n${build_res.stderr}\n${build_res.output}\n\`\`\``
           }
         }))
 
@@ -98,6 +100,7 @@ export = (app: Application) => {
       }))
 
       etaTimer = setInterval(async () => {
+        console.log("still goin")
         return // TODO
         let eta = '15m30s - 11234 / 17000'
         await context.github.checks.update(context.repo({
@@ -111,7 +114,8 @@ export = (app: Application) => {
         console.log("updated ETA", eta)
       }, 15000)
 
-      let res = spawnSync("python3 report_ci.py datasets/1702 /repo", {
+      console.log("starting report_ci.py")
+      let res = spawnSync("python3", ["report_ci.py", "datasets/1702", "/repo"], {
         cwd: "/home/ci/"
       })
       clearInterval(etaTimer)
