@@ -40,7 +40,7 @@ export = (app: Application) => {
     let etaTimer = undefined
 
     try {
-      let repo = await Repository.open("/tmp/testing123")
+      let repo = await Repository.open("/repo")
       await repo.fetchAll()
       let commit = await Commit.lookup(repo, head_sha)
       if (!commit) {
@@ -73,7 +73,9 @@ export = (app: Application) => {
         }
       }))
 
-      let build_res = spawnSync("cargo build --release")
+      let build_res = spawnSync("cargo build --release", {
+        cwd: "/repo"
+      })
 
       if (build_res.status !== 0) {
         await context.github.checks.update(context.repo({
