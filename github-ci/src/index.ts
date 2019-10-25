@@ -121,9 +121,10 @@ export = (app: Application) => {
       }, 15000)
 
       console.log("starting report_ci.py")
-      spawnSync("python3", ["report_ci.py", "datasets/1702", "/repo", head_sha], {
+      let proc = spawn("python3", ["report_ci.py", "datasets/1702", "/repo", head_sha], {
         cwd: "/root/"
       })
+      await new Promise(resolve => proc.on("exit", resolve))
       console.log("report_ci.py finished")
       clearInterval(etaTimer)
 
