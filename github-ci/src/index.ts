@@ -116,7 +116,7 @@ export = (app: Application) => {
 
       console.log("starting report_ci.py")
       let res = spawnSync("python3", ["report_ci.py", "datasets/1702", "/repo"], {
-        cwd: "/home/ci/"
+        cwd: "/root/"
       })
       clearInterval(etaTimer)
 

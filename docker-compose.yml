@@ -3,11 +3,13 @@ version: '3'
 services:
   app:
     build: .
-    user: ${UID}
+    #user: ${UID}
     volumes:
-      - ./datasets:/home/ci/datasets:ro
-      - ./reports:/home/ci/reports:rw
-      - ./objects:/home/ci/objects:rw
+      - ./datasets:/root/datasets:ro
+      - ./reports:/root/reports:rw
+      - ./objects:/root/objects:rw
       - ./ci-repo:/repo:rw
-      - ./ci-tex-cache:/home/ci/.cache/Tectonic:rw
-      - ./ci-cargo-cache:/home/ci/.cargo:rw
+      - ./ci-tex-cache:/root/.cache/Tectonic:rw
+      - ./ci-cargo-cache/git:/root/.cargo/git:rw
+      - ./ci-cargo-cache/registry:/root/.cargo/registry:rw
+      - ./ci-cargo-cache/CACHEDIR.TAG:/root/.cargo/CACHEDIR.TAG:rw
