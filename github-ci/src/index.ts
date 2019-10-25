@@ -1,6 +1,6 @@
 import { Application, Context } from 'probot'
-import { Merge, Repository, Reference, Commit, Tree, Checkout } from 'nodegit'
-import { spawnSync, spawn } from 'child_process'
+import { Merge, Repository, Commit, Reset } from 'nodegit'
+import { spawnSync } from 'child_process'
 
 const sleep = (m: number) => new Promise(r => setTimeout(r, m))
 
@@ -57,10 +57,7 @@ export = (app: Application) => {
         return
       }
 
-      let tree_oid = commit.treeId()
-      let tree = await Tree.lookup(repo, tree_oid)
-      await Checkout.tree(repo, tree)
-
+      await Reset.reset(repo, commit, Reset.TYPE.HARD, {})
       console.log("did checkout")
 
 
