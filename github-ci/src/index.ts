@@ -140,15 +140,11 @@ ${a} vs ${b}
 | Samples | Count |
 | -- | -- |
 | Identical | ${identical} |
-| Identical&Successful | ${identicalSuccessful} |
+| Identical & Successful | ${identicalSuccessful} |
 | Different | ${different} |
 | Missing  | ${missing} |
 
-## Smallest regression
-
-TODO
-
-## Changes
+## Changes (${changes.length})
 
 ${changes.length < 100 ? changesText : 'Too many changes for GitHub\'s API payload size limit.'}
 
@@ -203,11 +199,13 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       }
     }))
 
-    console.log("finished building")
+    console.log("building...")
 
     let build_res = spawnSync("cargo", ["build", "--release"], {
       cwd: "/repo"
     })
+
+    console.log("finished building")
 
     if (build_res.status !== 0) {
       await context.github.checks.update(context.repo({
@@ -284,7 +282,7 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       conclusion: different ? 'failure' : 'success',
       completed_at: new Date().toISOString(),
       output: {
-        title: `tectonic-on-arXiv - ${different} changes`,
+        title: `${different} changes`,
         summary: markdown_report(base, head_sha)
       }
     }))
