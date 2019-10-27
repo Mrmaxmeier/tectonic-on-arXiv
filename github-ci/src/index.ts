@@ -1,7 +1,7 @@
 import { Application, Context } from 'probot'
 import { Merge, Repository, Commit, Reset } from 'nodegit'
 import { spawnSync, spawn } from 'child_process'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, existsSync, statSync } from 'fs'
 
 const sleep = (m: number) => new Promise(r => setTimeout(r, m))
 
@@ -111,27 +111,39 @@ function markdown_report(a: string, b: string, eta?: string) {
 
   let { missing, identical, identicalSuccessful, different, changes } = get_changes(a, b)
 
+  function objectsTable(sA: SampleRun, sB: SampleRun) {
+    let objects = Array.from(new Set([...Object.keys(sA.results), ...Object.keys(sB.results)]))
+    objects.sort()
+    let result = ''
+    result += '| File | Base |     | PR   |\n'
+    result += '| ---- | ---- | --- | ---- |\n'
+    result += `| _Statuscode_ | ${cmp(sA.statuscode.toString(), sB.statuscode.toString())} |\n`
+    for (let obj of objects) {
+      let objA = sA.results[obj]
+      let objB = sB.results[obj]
+      result += `| ${pre(obj)} | ${cmp(objA, objB)} |\n`
+    }
+    return result
+  }
+
+  let smallestRegression = +Infinity
+  let smallestRegressionText = ''
 
   let changesText = ''
   let cmp = (a: string, b: string) => `${pre(a)} | ${a === b ? '=' : '**≠**'} | ${pre(b)}`
   for (let [sA, sB] of changes) {
     changesText += `### ${sA.sample}\n`
-    let objects = Array.from(new Set([...Object.keys(sA.results), ...Object.keys(sB.results)]))
-    objects.sort()
+    changesText += objectsTable(sA, sB) + '\n'
 
-    changesText += '| File | Base |     | PR   |\n'
-    changesText += '| ---- | ---- | --- | ---- |\n'
-    changesText += `| _Statuscode_ | ${cmp(sA.statuscode.toString(), sB.statuscode.toString())} |\n`
-    for (let obj of objects) {
-      let objA = sA.results[obj]
-      let objB = sB.results[obj]
-      changesText += `| ${pre(obj)} | ${cmp(objA, objB)} |\n`
+    let stat = statSync("/root/datasets/1702/" + sA.sample + ".gz")
+    if (stat && stat.size < smallestRegression) {
+      smallestRegression = stat.size
+      smallestRegressionText = `## Smallest Regression: ${sA.sample}\nSize: ${stat.size} bytes gz'd\n${objectsTable(sA, sB)}\n`
     }
-    changesText += '\n'
   }
 
   return `
-  ${eta ? ':construction: ' : ''}${eta ? pre(eta) : ''}${eta ? ' :construction:' : ''}
+${eta ? ':construction: This test run is currently in progress. :construction:' : ''}
 
 ${a} vs ${b}
 
@@ -143,6 +155,8 @@ ${a} vs ${b}
 | Identical & Successful | ${identicalSuccessful} |
 | Different | ${different} |
 | Missing  | ${missing} |
+
+${smallestRegressionText}
 
 ## Changes (${changes.length})
 
@@ -173,19 +187,8 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
 
   try {
     let commit = await Commit.lookup(repo, head_sha)
-    if (!commit) {
-      await context.github.checks.update(context.repo({
-        check_run_id,
-        status: 'completed',
-        conclusion: 'cancelled',
-        completed_at: new Date().toISOString(),
-        output: {
-          title: 'tectonic-on-arXiv',
-          summary: 'couldn\'t find commit'
-        }
-      }))
-      return
-    }
+    if (!commit)
+      throw new Error("unknown commit")
 
     await Reset.reset(repo, commit, Reset.TYPE.HARD, {})
     console.log("did checkout")
@@ -214,7 +217,7 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
         completed_at: new Date().toISOString(),
         conclusion: 'cancelled',
         output: {
-          title: 'tectonic-on-arXiv',
+          title: 'Build Failed',
           summary: `couldn't build\n\`\`\`\n${build_res.stderr}\n${build_res.output}\n\`\`\``
         }
       }))
@@ -225,7 +228,7 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       check_run_id,
       status: 'in_progress',
       output: {
-        title: 'tectonic-on-arXiv',
+        title: 'Starting Testrun',
         summary: 'Waiting for results...'
       }
     }))
@@ -251,9 +254,10 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
         check_run_id,
         status: 'in_progress',
         output: {
-          title: `tectonic-on-arXiv - ${eta}`,
+          title: eta,
           summary
-        }
+        },
+        details_url: `https://tt.ente.ninja/#/compare/${base}/${head_sha}`
       }))
     }, 15000)
 
@@ -284,7 +288,8 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       output: {
         title: `${different} changes`,
         summary: markdown_report(base, head_sha)
-      }
+      },
+      details_url: `https://tt.ente.ninja/#/compare/${base}/${head_sha}`
     }))
 
   } catch (e) {
