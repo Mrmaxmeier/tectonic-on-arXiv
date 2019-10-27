@@ -137,12 +137,12 @@ ${a} vs ${b}
 
 ## Summary
 
-\`\`\`
-  identical samples: ${identical}
-  \\>     successful: ${identicalSuccessful}
-  different samples: ${different}
-    missing samples: ${missing}
-\`\`\`
+| Samples | Count |
+| -- | -- |
+| Identical | ${identical} |
+| Identical&Successful | ${identicalSuccessful} |
+| Different | ${different} |
+| Missing  | ${missing} |
 
 ## Smallest regression
 
@@ -150,12 +150,9 @@ TODO
 
 ## Changes
 
-<details><summary>View Changes (${changes.length})</summary>
+${changes.length < 100 ? changesText : 'Too many changes for GitHub\'s API payload size limit.'}
 
-${changesText}
-
-</details>
-  `
+`
 }
 
 async function run_check(context: Context, repo: Repository, head_sha: string, head_branch: string, base: string) {
