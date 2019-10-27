@@ -27,7 +27,7 @@ def gc(reports):
                 notUniques[rep].update(vals)
     for r in reports:
         for pkt in stream(r):
-            if pkt["results"]:
+            if "results" in pkt:
                 live.update(pkt["results"].values())
                 updateUniques(r, pkt["results"].values())
     files = set([x.name for x in Path("objects").iterdir() if x.is_file()])
