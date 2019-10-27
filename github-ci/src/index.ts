@@ -31,6 +31,133 @@ async function get_base_report(repo: Repository, head_sha: string): Promise<stri
   return null
 }
 
+interface SampleRun {
+  sample: string,
+  statuscode: number,
+  seconds: number,
+  results: { [key: string]: string }
+}
+
+function get_samples(sha: string) {
+  let results = readFileSync("/root/reports/" + sha + ".jsonl")
+  let res = []
+  for (let s of results.toString().split("\n")) {
+    if (!s) continue
+    let entry = JSON.parse(s)
+    if (entry.meta) continue;
+    res.push(entry as SampleRun)
+  }
+  return res
+}
+
+function get_changes(a: string, b: string) {
+  let samplesA: { [key: string]: SampleRun } = {}
+  let samplesB: { [key: string]: SampleRun } = {}
+
+  for (let sA of get_samples(a))
+    samplesA[sA.sample] = sA
+  for (let sB of get_samples(b))
+    samplesB[sB.sample] = sB
+
+
+  let samples = Array.from(new Set([...Object.keys(samplesA), ...Object.keys(samplesB)]))
+  samples.sort()
+
+  let missing = 0
+  let identical = 0
+  let different = 0
+  let identicalSuccessful = 0
+  let changes = []
+  for (let sample of samples) {
+    let sA = samplesA[sample]
+    let sB = samplesB[sample]
+
+    if (!sA || !sB) {
+      missing++
+      continue
+    }
+
+
+    let objects = Array.from(new Set([...Object.keys(sA.results), ...Object.keys(sB.results)]))
+    objects.sort()
+
+    let isDifferent = sA.statuscode !== sB.statuscode
+    for (let obj of objects) {
+      if (sA.results[obj] !== sB.results[obj])
+        isDifferent = true
+    }
+
+    if (isDifferent) {
+      different++
+      changes.push([sA, sB])
+    } else {
+      identical++
+      if (sA.statuscode === 0)
+        identicalSuccessful++
+    }
+  }
+
+  return {
+    missing,
+    identical,
+    different,
+    identicalSuccessful,
+    changes
+  }
+}
+
+function markdown_report(a: string, b: string, eta?: string) {
+  const pre = (text: string) => '`' + text + '`';
+
+  let { missing, identical, identicalSuccessful, different, changes } = get_changes(a, b)
+
+
+  let changesText = ''
+  let cmp = (a: string, b: string) => `${pre(a)} | ${a === b ? '=' : '**≠**'} | ${pre(b)}`
+  for (let [sA, sB] of changes) {
+    changesText += `### ${sA.sample}\n`
+    let objects = Array.from(new Set([...Object.keys(sA.results), ...Object.keys(sB.results)]))
+    objects.sort()
+
+    changesText += '| File | Base |     | PR   |\n'
+    changesText += '| ---- | ---- | --- | ---- |\n'
+    changesText += `| _Statuscode_ | ${cmp(sA.statuscode.toString(), sB.statuscode.toString())} |\n`
+    for (let obj of objects) {
+      let objA = sA.results[obj]
+      let objB = sB.results[obj]
+      changesText += `| ${pre(obj)} | ${cmp(objA, objB)} |\n`
+    }
+    changesText += '\n'
+  }
+
+  return `
+  ${eta ? ':construction: ' : ''}${eta ? pre(eta) : ''}${eta ? ' :construction:' : ''}
+
+${a} vs ${b}
+
+## Summary
+
+\`\`\`
+  identical samples: ${identical}
+  \\>     successful: ${identicalSuccessful}
+  different samples: ${different}
+    missing samples: ${missing}
+\`\`\`
+
+## Smallest regression
+
+TODO
+
+## Changes
+
+<details><summary>View Changes (${changes.length})</summary>
+
+${changesText}
+
+</details>
+  `
+}
+
 async function run_check(context: Context, repo: Repository, head_sha: string, head_branch: string, base: string) {
   const started_at = new Date().toISOString()
   const name = 'tectonic-on-arXiv'
@@ -104,7 +231,7 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       status: 'in_progress',
       output: {
         title: 'tectonic-on-arXiv',
-        summary: ''
+        summary: 'Waiting for results...'
       }
     }))
 
@@ -118,13 +245,19 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       let etaSecs = Math.round((SAMPLES - lines) / speed)
       let etaT = etaSecs > 270 ? Math.round(etaSecs / 60) + 'm' : etaSecs + 's'
       let eta = `ETA: ${etaT} - ${lines} / ${SAMPLES}`
-      console.log("still goin " + eta)
+      console.log(`still going ${head_sha} ${eta}`)
+      let summary = ''
+      try {
+        summary = markdown_report(base, head_sha, eta)
+      } catch (e) {
+        summary = '```\n' + e + '\n```'
+      }
       context.github.checks.update(context.repo({
         check_run_id,
         status: 'in_progress',
         output: {
           title: `tectonic-on-arXiv - ${eta}`,
-          summary: eta
+          summary
         }
       }))
     }, 15000)
@@ -145,14 +278,17 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
     console.log("report_ci.py finished")
     clearInterval(etaTimer)
 
+    await sleep(1500)
+    let { different } = get_changes(base, head_sha)
+
     await context.github.checks.update(context.repo({
       check_run_id,
       status: 'completed',
-      conclusion: 'neutral',
+      conclusion: different ? 'failure' : 'success',
       completed_at: new Date().toISOString(),
       output: {
-        title: 'tectonic-on-arXiv',
-        summary: `TODO: compare reports/${head_sha}.jsonl and reports/${base}.jsonl`
+        title: `tectonic-on-arXiv - ${different} changes`,
+        summary: markdown_report(base, head_sha)
       }
     }))
 
