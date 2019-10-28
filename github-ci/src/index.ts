@@ -138,7 +138,7 @@ function markdown_report(a: string, b: string, eta?: string) {
     let stat = statSync("/root/datasets/1702/" + sA.sample + ".gz")
     if (stat && stat.size < smallestRegression) {
       smallestRegression = stat.size
-      smallestRegressionText = `## Smallest Regression: ${sA.sample}\nSize: ${stat.size} bytes gz'd\n${objectsTable(sA, sB)}\n`
+      smallestRegressionText = `## Smallest Change: ${sA.sample}\nSize: ${stat.size} bytes gz'd\n\n${objectsTable(sA, sB)}\n`
     }
   }
 
