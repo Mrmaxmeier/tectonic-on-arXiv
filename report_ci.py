@@ -88,7 +88,7 @@ def do_work(sample, maindoc, tectonic):
         excluded = capture_files(d, as_set=True)
         start = time.time()
         test = subprocess.run([tectonic] + ARGUMENTS +
-                              [d / maindoc], timeout=60*2, cwd=d, env=env)
+                              [d / maindoc], timeout=180, cwd=d, env=env)
         delta = time.time() - start
         results = capture_files(d, excluded=excluded)
         report = dict(sample=sample.stem, statuscode=test.returncode,
