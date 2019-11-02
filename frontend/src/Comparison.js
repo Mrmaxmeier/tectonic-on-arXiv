@@ -93,6 +93,8 @@ export class ReportComparison extends PureComponent {
 
         let identical = []
         let different = []
+        let differentByType = {}
+        let differentTypes = []
         let regressions = []
         let fixes = []
         let missing = []
@@ -102,23 +104,34 @@ export class ReportComparison extends PureComponent {
             if (A[sample] && B[sample]) {
                 let a = A[sample]
                 let b = B[sample]
-                let files = Object.keys(a.results).concat(Object.keys(b.results))
+                let files = Array.from(new Set(Object.keys(a.results).concat(Object.keys(b.results))))
                 let filesDiffer = false
+                let exts = new Set()
                 for (let file of files) {
-                    if (a.results[file] !== b.results[file])
+                    if (a.results[file] !== b.results[file]) {
                         filesDiffer = true
+
+                        if (a.results[file] && b.results[file]) {
+                            let parts = file.split(".")
+                            let ext = parts[parts.length - 1]
+                            exts.add('.'+ext)
+                        }
+                    }
                 }
-                if (a.statuscode !== b.statuscode) {
-                    if (a.statuscode === 0)
-                        regressions.push(sample)
-                    else if (b.statuscode === 0)
-                        fixes.push(sample)
-                    else
-                        different.push(sample)
-                } else if (filesDiffer)
+                exts = Array.from(exts)
+                exts = exts.sort().join(", ")
+                if (a.statuscode === 0 && b.statuscode !== 0) {
+                    regressions.push(sample)
+                } else if (a.statuscode !== 0 && b.statuscode === 0) {
+                    fixes.push(sample)
+                } else if (filesDiffer) {
                     different.push(sample)
-                else
+                    if (differentByType[exts] === undefined)
+                        differentByType[exts] = []
+                    differentByType[exts].push(sample)
+                } else {
                     identical.push(sample)
+                }
             } else {
                 if (A[sample])
                     missing.push(sample)
@@ -127,9 +140,14 @@ export class ReportComparison extends PureComponent {
             }
         }
 
+        differentTypes = Object.keys(differentByType)
+        differentTypes.sort()
+
         return <>
             <Category kind="identical" colorscheme="test-pass" samples={identical} lefts={A} rights={B} />
             <Category kind="output changed" colorscheme="changed" samples={different} lefts={A} rights={B} />
+            {differentTypes.map(k =>  <Category kind={"output changed - " + k} colorscheme="changed" samples={differentByType[k]} lefts={A} rights={B} />)}
+            {differentTypes ? <br /> : null}
             <Category kind="fixed" colorscheme="spurious-fixed" samples={fixes} lefts={A} rights={B} />
             <Category kind="regressed" colorscheme="spurious-regressed" samples={regressions} lefts={A} rights={B} />
             <Category kind="missing samples" colorscheme="error" samples={missing} lefts={A} rights={B} />
