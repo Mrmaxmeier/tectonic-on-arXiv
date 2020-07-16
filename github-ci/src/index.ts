@@ -20,7 +20,7 @@ async function get_base_report(repo: Repository, head_sha: string): Promise<stri
   let merge_base = await Merge.base(repo, commit.id(), master.id())
   console.log("get_base_report merge_base", merge_base.tostrS())
   let current = await Commit.lookup(repo, merge_base)
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 250; i++) {
     let sha = current.id().tostrS()
     if (existsSync("/root/reports/" + sha + ".jsonl")) {
       return sha

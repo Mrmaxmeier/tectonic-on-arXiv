@@ -50,8 +50,10 @@ def artifacts(a, b, sample):
         _a = sA['results'].get(k, ' ' * 20)
         _b = sB['results'].get(k, ' ' * 20)
         print(_a, " = " if _a == _b else " ! ", _b, k)
-        shutil.copy("objects/" + _a, "/tmp/artA/" + k)
-        shutil.copy("objects/" + _b, "/tmp/artB/" + k)
+        if _a != ' '*20:
+            shutil.copy("objects/" + _a, "/tmp/artA/" + k)
+        if _b != ' '*20:
+            shutil.copy("objects/" + _b, "/tmp/artB/" + k)
         if k.endswith(".pdf"):
             subprocess.run(["pdfutil", "decompress", "-i",
                             "/tmp/artA/" + k, "-o", "/tmp/artA/_" + k])

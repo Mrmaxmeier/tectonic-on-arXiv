@@ -50,7 +50,8 @@ def prepare(sample):
 
     with TestEnv(sample) as d:
         maindoc = get_maindoc(d, sample)
-        return maindoc.name
+        if maindoc:
+            return maindoc.name
 
 
 @click.command()

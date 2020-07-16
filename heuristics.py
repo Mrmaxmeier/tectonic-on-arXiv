@@ -45,6 +45,7 @@ ENTRY_FILES = [
     'full-eight-vertex.tex',
     'BigVARV3.tex',
     'BohrSomRevistdAll.tex',
+    'WaveParticleExperiment.tex',
 ]
 
 
@@ -64,6 +65,10 @@ def get_maindoc(p, sample):
     if not viable and len(list(p.iterdir())) == 1:
         # probably not a tar archive => it'll be the source file
         return next(p.iterdir())
+    if not viable:
+        return None
+    if len(viable) >= 2:
+        return None
     assert viable, "missing entry point"
     assert len(viable) < 2, "multiple entry points?"
     return viable[0]

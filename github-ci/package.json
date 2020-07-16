@@ -22,21 +22,21 @@
   },
   "dependencies": {
     "@types/nock": "^11.1.0",
-    "@types/nodegit": "^0.24.12",
-    "nock": "^11.6.0",
-    "nodegit": "^0.26.2",
-    "probot": "^9.6.0"
+    "@types/nodegit": "^0.26.6",
+    "nock": "^13.0.2",
+    "nodegit": "^0.26.5",
+    "probot": "^9.11.7"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.0",
-    "@types/node": "^12.11.7",
+    "@types/jest": "^26.0.4",
+    "@types/node": "^14.0.23",
     "eslint-plugin-typescript": "^0.14.0",
-    "jest": "^24.0.0",
-    "nodemon": "^1.17.2",
+    "jest": "^26.1.0",
+    "nodemon": "^2.0.4",
     "smee-client": "^1.0.2",
-    "standard": "^14.3.1",
-    "ts-jest": "^24.0.0",
-    "typescript": "^3.3.1",
+    "standard": "^14.3.4",
+    "ts-jest": "^26.1.2",
+    "typescript": "^3.9.6",
     "typescript-eslint-parser": "^22.0.0"
   },
   "engines": {
