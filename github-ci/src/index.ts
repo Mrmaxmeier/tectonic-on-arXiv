@@ -160,7 +160,7 @@ ${smallestRegressionText}
 
 ## Changes (${changes.length})
 
-${changes.length < 100 ? changesText : 'Too many changes for GitHub\'s API payload size limit.'}
+${changes.length < 80 ? changesText : 'Too many changes for GitHub\'s API payload size limit.'}
 
 `
 }
