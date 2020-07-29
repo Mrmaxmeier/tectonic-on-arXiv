@@ -1,9 +1,9 @@
-FROM ubuntu:19.10
+FROM ubuntu:20.10
 
 MAINTAINER Mrmaxmeier
 
-RUN apt update
-RUN apt install -y python3 python3-pip nodejs curl git p7zip \
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y python3 python3-pip nodejs curl git p7zip \
  openssl libssl-dev pkg-config cmake \
  libfreetype6 libfreetype6-dev libharfbuzz-dev \
  fontconfig libgraphite2-3 libgraphite2-dev \
