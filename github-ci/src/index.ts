@@ -239,7 +239,7 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
       let lines = res.toString().match(/\n/g)!.length
       let seconds = (new Date() as any - (report_start as any)) as number / 1000
       let speed = (lines / seconds)
-      let SAMPLES = 2447
+      let SAMPLES = 7979
       let etaSecs = Math.round((SAMPLES - lines) / speed)
       let etaT = etaSecs > 270 ? Math.round(etaSecs / 60) + 'm' : etaSecs + 's'
       let eta = `ETA: ${etaT} - ${lines} / ${SAMPLES}`
