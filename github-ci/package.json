@@ -4,38 +4,24 @@
   "description": "A Probot app",
   "author": "Mrmaxmeier <Mrmaxmeier@gmail.com>",
   "license": "ISC",
-  "repository": "https://github.com//tectonic-on-arXiv.git",
-  "homepage": "https://github.com//tectonic-on-arXiv",
-  "bugs": "https://github.com//tectonic-on-arXiv/issues",
-  "keywords": [
-    "probot",
-    "github",
-    "probot-app"
-  ],
+  "repository": "https://github.com/Mrmaxmeier/tectonic-on-arXiv.git",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "nodemon --exec \"npm start\"",
     "start": "probot run ./lib/index.js",
-    "lint": "standard **/*.ts --fix",
-    "test": "jest && standard **/*.ts",
-    "test:watch": "jest --watch --notify --notifyMode=change --coverage"
+    "lint": "standard **/*.ts --fix"
   },
   "dependencies": {
-    "@types/nock": "^11.1.0",
     "@types/nodegit": "^0.26.7",
-    "nock": "^13.0.3",
     "nodegit": "^0.26.5",
     "probot": "^9.13.0"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.7",
     "@types/node": "^14.0.27",
     "eslint-plugin-typescript": "^0.14.0",
-    "jest": "^26.1.0",
     "nodemon": "^2.0.4",
     "smee-client": "^1.0.2",
     "standard": "^14.3.4",
-    "ts-jest": "^26.1.4",
     "typescript": "^3.9.7",
     "typescript-eslint-parser": "^22.0.0"
   },
@@ -44,14 +30,8 @@
   },
   "standard": {
     "parser": "typescript-eslint-parser",
-    "env": [
-      "jest"
-    ],
     "plugins": [
       "typescript"
     ]
-  },
-  "jest": {
-    "testEnvironment": "node"
   }
 }
