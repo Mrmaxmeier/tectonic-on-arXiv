@@ -13,3 +13,13 @@ services:
       - ./ci-cargo-cache/git:/root/.cargo/git:rw
       - ./ci-cargo-cache/registry:/root/.cargo/registry:rw
       - ./ci-cargo-cache/CACHEDIR.TAG:/root/.cargo/CACHEDIR.TAG:rw
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/build/:/var/www/build:ro
+      - ./datasets:/var/www/datasets:ro
+      - ./reports:/var/www/reports:ro
+      - ./objects:/var/www/objects:ro
+    ports:
+      - 6665:80
