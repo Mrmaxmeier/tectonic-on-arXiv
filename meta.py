@@ -1,4 +1,3 @@
-import click
 import json
 from pathlib import Path
 from pprint import pprint
@@ -10,11 +9,8 @@ def stream(p):
             yield json.loads(l)
 
 
-@click.command()
-@click.argument("reports", nargs=-1)
-def meta(reports):
-    if not reports:
-        reports = Path("reports").glob("*.jsonl")
+def meta():
+    reports = Path("reports").glob("*.jsonl")
     compatible_samples = set()
     _reports = []
     for r in reports:
