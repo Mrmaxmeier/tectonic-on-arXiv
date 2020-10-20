@@ -87,11 +87,16 @@ def do_work(sample, maindoc, tectonic):
         print(d)
         excluded = capture_files(d, as_set=True)
         start = time.time()
-        test = subprocess.run([tectonic] + ARGUMENTS +
-                              [d / maindoc], timeout=600, cwd=d, env=env)
+        try:
+            test = subprocess.run([tectonic] + ARGUMENTS +
+                                  [d / maindoc], timeout=600, cwd=d, env=env,
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            statuscode = test.returncode
+        except subprocess.TimeoutExpired:
+            statuscode = -99999
         delta = time.time() - start
         results = capture_files(d, excluded=excluded)
-        report = dict(sample=sample.stem, statuscode=test.returncode,
+        report = dict(sample=sample.stem, statuscode=statuscode,
                       seconds=delta, results=results)
     print(json.dumps(report))
     return report
