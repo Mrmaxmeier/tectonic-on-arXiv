@@ -318,8 +318,9 @@ async function run_check(context: Context, repo: Repository, head_sha: string, h
 let requests: { [key: string]: boolean } = {}
 
 export = (app: Application) => {
+  /*
   async function check(context: Context) {
-    // NOTE: check_suite.pull_requests is not reliable.
+    // NOTE(2020-10-25): check_suite.pull_requests is not reliable.
     if (!context.payload.check_suite) {
       console.log("check without check_suite")
       return
@@ -339,6 +340,7 @@ export = (app: Application) => {
   }
 
   app.on(['check_suite.requested', 'check_run.rerequested'], check)
+  */
   app.on(["pull_request.opened", "pull_request.reopened", "pull_request.synchronize"], async (context: Context) => {
     let head_sha: string = context.payload.pull_request.head.sha
     let head_branch: string = context.payload.pull_request.head.ref
@@ -347,7 +349,7 @@ export = (app: Application) => {
     }
     requests[head_sha] = true
     let repo = await open_repo()
-    let base_sha = await get_base_report(repo, head_sha)
+    let base_sha = context.payload.pull_request.base.sha
     if (!base_sha) {
       console.log("check without base_sha")
       return
