@@ -17,7 +17,17 @@ async function open_repo() {
 }
 
 export async function run_check({ context, head_sha, head_branch, base_sha, check_run_id }: Job) {
-    if (!existsSync(report_path(head_sha))) return
+    if (!existsSync(report_path(head_sha))) {
+        console.log("skipping", head_sha)
+        if (context && check_run_id)
+            await context.github.checks.update(context.repo({
+                check_run_id,
+                status: 'completed',
+                conclusion: 'cancelled',
+                completed_at: new Date().toISOString(),
+            }))
+        return
+    }
     console.log("run_check", head_sha, head_branch, base_sha)
 
     let repo = await open_repo()
@@ -94,7 +104,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
             if (context && check_run_id && base_sha) {
                 let summary = ''
                 try {
-                    summary = markdown_report(base_sha, head_sha, eta)
+                    summary = markdown_report(PR_RUN_DATASET, base_sha, head_sha, eta)
                 } catch (e) {
                     summary = '```\n' + e + '\n```'
                 }
