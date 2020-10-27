@@ -17,7 +17,7 @@ async function open_repo() {
 }
 
 export async function run_check({ context, head_sha, head_branch, base_sha, check_run_id }: Job) {
-    if (!existsSync(report_path(head_sha))) {
+    if (existsSync(report_path(head_sha))) {
         console.log("skipping", head_sha)
         if (context && check_run_id)
             await context.github.checks.update(context.repo({
