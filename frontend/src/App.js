@@ -4,7 +4,9 @@ import './App.css';
 import { ReportComparison } from './Comparison'
 import { ReportSummary } from './Summary'
 
-// export const HOST = 'http://localhost:7331'
+// python3 -m http.server 7331
+// npx local-cors-proxy --proxyUrl http://localhost:7331 --proxyPartial ""
+// export const HOST = 'http://localhost:8010'
 export const HOST = 'https://tt.ente.ninja'
 
 // css/html adapted from

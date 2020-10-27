@@ -12,7 +12,9 @@
     "lint": "standard **/*.ts --fix"
   },
   "dependencies": {
+    "@types/async": "^3.2.3",
     "@types/nodegit": "^0.26.11",
+    "async": "^3.2.0",
     "nodegit": "^0.27.0",
     "probot": "^10.9.4"
   },
