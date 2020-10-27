@@ -1,20 +1,11 @@
 import { Application, Context } from 'probot'
 import { queue } from 'async'
 import { run_check } from './run'
-
-export const PR_RUN_DATASET = "1702"
-
-export interface Job {
-  context?: Context,
-  head_sha: string,
-  head_branch?: string,
-  base_sha?: string,
-  check_run_id?: number,
-}
+import { Job } from './misc'
 
 const jobs = queue<Job>(async (job, _) => await run_check(job), 1)
 
-export default function (app: Application) {
+export = function (app: Application) {
   /*
   async function check(context: Context) {
     // NOTE(2020-10-25): check_suite.pull_requests is not reliable.

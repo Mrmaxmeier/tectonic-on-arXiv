@@ -1,7 +1,7 @@
 import { spawnSync, spawn } from "child_process"
 import { existsSync, readFileSync } from "fs"
 import { Repository, Commit, Reset } from "nodegit"
-import { Job, PR_RUN_DATASET } from "."
+import { Job, PR_RUN_DATASET } from "./misc"
 import { report_path, markdown_report, get_changes } from "./report"
 
 
