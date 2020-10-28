@@ -31,7 +31,8 @@ export = function (app: Application) {
   app.on(["pull_request.opened", "pull_request.reopened", "pull_request.synchronize"], async (context: Context) => {
     let head_sha: string = context.payload.pull_request.head.sha
     let head_branch: string = context.payload.pull_request.head.ref
-    let base_sha = context.payload.pull_request.base.sha
+    let base_sha: string = context.payload.pull_request.base.sha
+    console.log(`starting run: base=${base_sha} head=${head_sha}`)
     let { data: { id: check_run_id } } = await context.github.checks.create(context.repo({
       name: 'tectonic-on-arXiv',
       head_branch,
@@ -39,8 +40,8 @@ export = function (app: Application) {
       status: 'queued',
     }))
     // ensure that base_sha has a report ready
-    jobs.unshift({ head_sha: base_sha })
+    jobs.push({ head_sha: base_sha })
     // start regression check
-    jobs.unshift({ context, head_sha, head_branch, base_sha, check_run_id })
+    jobs.push({ context, head_sha, head_branch, base_sha, check_run_id })
   })
 }
