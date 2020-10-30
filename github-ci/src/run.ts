@@ -1,6 +1,6 @@
 import { spawnSync, spawn } from "child_process"
 import { existsSync, readFileSync } from "fs"
-import { Repository, Commit, Reset } from "nodegit"
+import { Repository, Commit, Reset, Merge } from "nodegit"
 import { Job, PR_RUN_DATASET } from "./misc"
 import { report_path, markdown_report, get_changes } from "./report"
 
@@ -10,10 +10,18 @@ const sleep = (m: number) => new Promise(r => setTimeout(r, m))
 async function open_repo() {
     let repo = await Repository.open("/repo")
     console.log("waiting a sec for fetchAll")
-    await sleep(2500)
+    await sleep(1000)
     console.log("fetchAll")
     await repo.fetchAll()
     return repo
+}
+
+export async function get_merge_base(head_sha: string, base_sha: string) {
+    let repo = await open_repo()
+    let head = await Commit.lookup(repo, head_sha)
+    let base = await Commit.lookup(repo, base_sha)
+    let merge_base = await Merge.base(repo, head.id(), base.id())
+    return merge_base.tostrS()
 }
 
 export async function run_check({ context, head_sha, head_branch, base_sha, check_run_id }: Job) {

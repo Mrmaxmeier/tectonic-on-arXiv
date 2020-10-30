@@ -1,6 +1,6 @@
 import { Application, Context } from 'probot'
 import { queue } from 'async'
-import { run_check } from './run'
+import { get_merge_base, run_check } from './run'
 import { Job } from './misc'
 
 const jobs = queue<Job>(async (job, _) => await run_check(job), 1)
@@ -32,7 +32,8 @@ export = function (app: Application) {
     let head_sha: string = context.payload.pull_request.head.sha
     let head_branch: string = context.payload.pull_request.head.ref
     let base_sha: string = context.payload.pull_request.base.sha
-    console.log(`starting run: base=${base_sha} head=${head_sha}`)
+    base_sha = await get_merge_base(head_sha, base_sha)
+    console.log(`queueing run: base=${base_sha} head=${head_sha}`)
     let { data: { id: check_run_id } } = await context.github.checks.create(context.repo({
       name: 'tectonic-on-arXiv',
       head_branch,
