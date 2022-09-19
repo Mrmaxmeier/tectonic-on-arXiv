@@ -1,9 +1,8 @@
-FROM ubuntu:20.10
+FROM ubuntu:22.04
 
-MAINTAINER Mrmaxmeier
-
-RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y python3 python3-pip nodejs curl git p7zip \
+ARG DEBIAN_FRONTEND="noninteractive"
+ENV TZ="Etc/UTC"
+RUN apt-get update && apt-get install -y htop python3 python3-pip nodejs curl git p7zip \
  openssl libssl-dev pkg-config cmake \
  libfreetype6 libfreetype6-dev libharfbuzz-dev \
  fontconfig libgraphite2-3 libgraphite2-dev \
@@ -25,6 +24,6 @@ COPY meta.py .
 COPY github-ci ./github-ci
 
 WORKDIR /root/github-ci
-RUN yarn install && yarn run build
+RUN yarn install && yarn cache clean && yarn run build
 
-ENTRYPOINT yarn start
+CMD ["yarn", "start"]
