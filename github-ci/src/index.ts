@@ -1,11 +1,11 @@
-import { Application, Context } from 'probot'
+import { Probot, Context } from 'probot'
 import { queue } from 'async'
 import { get_merge_base, run_check } from './run'
 import { Job } from './misc'
 
 const jobs = queue<Job>(async (job, _) => await run_check(job), 1)
 
-export = function (app: Application) {
+export = function (app: Probot) {
   /*
   async function check(context: Context) {
     // NOTE(2020-10-25): check_suite.pull_requests is not reliable.
@@ -28,13 +28,13 @@ export = function (app: Application) {
   }
   app.on(['check_suite.requested', 'check_run.rerequested'], check)
   */
-  app.on(["pull_request.opened", "pull_request.reopened", "pull_request.synchronize"], async (context: Context) => {
+  app.on(["pull_request.opened", "pull_request.reopened", "pull_request.synchronize"], async (context: Context<"pull_request">) => {
     let head_sha: string = context.payload.pull_request.head.sha
     let head_branch: string = context.payload.pull_request.head.ref
     let base_sha: string = context.payload.pull_request.base.sha
     base_sha = await get_merge_base(head_sha, base_sha)
     console.log(`queueing run: base=${base_sha} head=${head_sha}`)
-    let { data: { id: check_run_id } } = await context.github.checks.create(context.repo({
+    let { data: { id: check_run_id } } = await context.octokit.checks.create(context.repo({
       name: 'tectonic-on-arXiv',
       head_branch,
       head_sha,

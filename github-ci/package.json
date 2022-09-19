@@ -12,19 +12,19 @@
     "lint": "standard **/*.ts --fix"
   },
   "dependencies": {
-    "@types/async": "^3.2.3",
-    "@types/nodegit": "^0.26.12",
-    "async": "^3.2.0",
+    "@types/async": "^3.2.15",
+    "@types/nodegit": "^0.27.10",
+    "async": "^3.2.4",
     "nodegit": "^0.27.0",
-    "probot": "^10.9.5"
+    "probot": "^12.2.8"
   },
   "devDependencies": {
-    "@types/node": "^14.14.6",
+    "@types/node": "^18.7.18",
     "eslint-plugin-typescript": "^0.14.0",
-    "nodemon": "^2.0.6",
-    "smee-client": "^1.2.2",
-    "standard": "^16.0.0",
-    "typescript": "^4.0.5",
+    "nodemon": "^2.0.20",
+    "smee-client": "^1.2.3",
+    "standard": "^17.0.0",
+    "typescript": "^4.8.3",
     "typescript-eslint-parser": "^22.0.0"
   },
   "engines": {

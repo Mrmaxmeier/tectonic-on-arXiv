@@ -28,7 +28,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
     if (existsSync(report_path(head_sha))) {
         console.log("skipping", head_sha)
         if (context && check_run_id)
-            await context.github.checks.update(context.repo({
+            await context.octokit.checks.update(context.repo({
                 check_run_id,
                 status: 'completed',
                 conclusion: 'cancelled',
@@ -56,7 +56,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
 
         console.log("building...")
         if (context && check_run_id) {
-            await context.github.checks.update(context.repo({
+            await context.octokit.checks.update(context.repo({
                 check_run_id,
                 status: 'in_progress',
                 output: {
@@ -66,6 +66,10 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
             }))
         }
 
+        spawnSync("git", ["submodule", "update", "--init"], {
+            cwd: "/repo"
+        })
+
         let build_res = spawnSync("cargo", ["build", "--release"], {
             cwd: "/repo"
         })
@@ -74,7 +78,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
 
         if (build_res.status !== 0) {
             if (context && check_run_id)
-                await context.github.checks.update(context.repo({
+                await context.octokit.checks.update(context.repo({
                     check_run_id,
                     status: 'completed',
                     completed_at: new Date().toISOString(),
@@ -89,7 +93,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
         }
 
         if (context && check_run_id)
-            await context.github.checks.update(context.repo({
+            await context.octokit.checks.update(context.repo({
                 check_run_id,
                 status: 'in_progress',
                 output: {
@@ -117,7 +121,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
                     summary = '```\n' + e + '\n```'
                 }
 
-                context.github.checks.update(context.repo({
+                context.octokit.checks.update(context.repo({
                     check_run_id,
                     status: 'in_progress',
                     output: {
@@ -148,7 +152,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
         if (context && check_run_id && base_sha) {
             await sleep(1500)
             let { different } = get_changes(base_sha, head_sha)
-            await context.github.checks.update(context.repo({
+            await context.octokit.checks.update(context.repo({
                 check_run_id,
                 status: 'completed',
                 conclusion: different ? 'failure' : 'success',
@@ -165,7 +169,7 @@ export async function run_check({ context, head_sha, head_branch, base_sha, chec
             clearInterval(etaTimer)
 
         if (context && check_run_id)
-            await context.github.checks.create(context.repo({
+            await context.octokit.checks.create(context.repo({
                 name,
                 head_branch,
                 head_sha,
