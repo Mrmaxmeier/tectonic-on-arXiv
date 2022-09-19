@@ -72,7 +72,7 @@ class TestEnv(object):
         shutil.rmtree(self.tmpdir)
 
 
-BUNDLE_URL = "https://tectonic.newton.cx/bundles/tlextras-2018.1r0/bundle.tar"
+BUNDLE_URL = "https://data1.fullyjustified.net/tlextras-2021.3r1.tar"
 ARGUMENTS = [
     "-w", BUNDLE_URL,
     "--keep-logs", "--keep-intermediates",
