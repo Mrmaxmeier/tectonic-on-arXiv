@@ -1,7 +1,7 @@
-import click
 import json
 from collections import Counter, defaultdict
 from pprint import pprint
+import sys
 
 
 def stream(path):
@@ -10,8 +10,6 @@ def stream(path):
             yield json.loads(x)
 
 
-@click.command()
-@click.argument("report")
 def summary(report):
     s = stream(report)
     meta = next(s)
@@ -45,4 +43,4 @@ def summary(report):
 
 
 if __name__ == "__main__":
-    summary()
+    summary(sys.argv[1])

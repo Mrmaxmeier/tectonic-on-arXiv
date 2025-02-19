@@ -32,6 +32,6 @@ RUN apt-get install -y git build-essential clang libssl-dev libkrb5-dev libc++-d
 RUN yarn install && yarn cache clean && yarn run build
 
 # /repo is a bind mount and might have wonky uids that scare modern git versions
-RUN git config --global --add safe.directory /repo
+RUN git config --global --add safe.directory "*"
 
 CMD ["yarn", "start"]

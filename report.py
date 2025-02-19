@@ -120,10 +120,10 @@ ARGUMENTS = [
     "-w", BUNDLE_URL,
     #"--only-cached", "--keep-logs", "--keep-intermediates",
     "-C", "--keep-logs", "--keep-intermediates",
+    "--reproducible",
     #"-Z", "pdf-deterministic-tags",
     # "-Z", "pdf-disable-compression", # produces >10 GB of artifacts
     #"-Z", "keep-xdv",
-    # "-Z", "omit-build-date", # not implemented
 ]
 
 

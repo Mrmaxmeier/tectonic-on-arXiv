@@ -1,4 +1,4 @@
-import click
+#import click
 import json
 from pathlib import Path
 from pprint import pprint
@@ -11,9 +11,9 @@ def stream(p):
             yield json.loads(l)
 
 
-@click.command()
-@click.argument("reports", nargs=-1)
-def gc(reports):
+#@click.command()
+#@click.argument("reports", nargs=-1)
+def gc(reports=None):
     if not reports:
         reports = list(Path("reports").glob("*.jsonl"))
     live = set()
@@ -51,9 +51,10 @@ def gc(reports):
         print("  404:", len(missing))
     print(" live:", len(live), objectSize(live))
     print(" dead:", len(dead), objectSize(dead))
-    if dead and click.confirm('Confirm GC?'):
+    if dead and True: # click.confirm('Confirm GC?'):
         for x in dead:
-            click.echo('rip ' + x)
+            # click.echo('rip ' + x)
+            print('rip', x)
             (Path("objects") / x).unlink()
     else:
         for x in dead:

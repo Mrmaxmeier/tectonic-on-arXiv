@@ -72,10 +72,11 @@ class TestEnv(object):
         shutil.rmtree(self.tmpdir)
 
 
-BUNDLE_URL = "https://data1.fullyjustified.net/tlextras-2021.3r1.tar"
+BUNDLE_URL = "https://data1.fullyjustified.net/tlextras-2022.0r0.tar"
 ARGUMENTS = [
-    "-w", BUNDLE_URL,
+    "--bundle", BUNDLE_URL,
     "--keep-logs", "--keep-intermediates",
+    "-Z", "deterministic-mode",
 ]
 
 
@@ -83,6 +84,7 @@ def do_work(sample, maindoc, tectonic):
     print(sample)
     env = os.environ.copy()
     env["SOURCE_DATE_EPOCH"] = "1456304492"
+    env["TECTONIC_UNTRUSTED_MODE"] = "1"
     with TestEnv(sample, is_tar=(maindoc != sample.stem)) as d:
         print(d)
         excluded = capture_files(d, as_set=True)
@@ -144,7 +146,7 @@ def report(corpus, repo, name):
 
     work = queue.Queue()
     outlock = threading.Lock()
-    num_worker_threads = 5
+    num_worker_threads = 32
 
     def worker():
         while True:

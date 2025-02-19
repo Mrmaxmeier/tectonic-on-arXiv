@@ -1,7 +1,6 @@
-import click
-
 from pprint import pprint
 import json
+import sys
 
 
 def parse(p):
@@ -10,9 +9,6 @@ def parse(p):
             yield json.loads(l.strip())
 
 
-@click.command()
-@click.argument("a", type=click.Path(exists=True))
-@click.argument("b", type=click.Path(exists=True))
 def compare(a, b):
     print(a, b)
     iA = parse(a)
@@ -71,4 +67,4 @@ def compare(a, b):
 
 
 if __name__ == "__main__":
-    compare()
+    compare(sys.argv[1], sys.argv[2])
